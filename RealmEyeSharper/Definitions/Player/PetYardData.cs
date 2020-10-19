@@ -5,6 +5,7 @@ namespace RealmEyeSharper.Definitions.Player
 	public class PetYardData : RealmEyeResponse
 	{
 		public IList<PetEntry> Pets { get; set; }
+		public bool IsPublic { get; set; }
 	}
 
 	public struct PetEntry

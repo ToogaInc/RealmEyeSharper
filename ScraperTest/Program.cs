@@ -9,7 +9,7 @@ namespace ScraperTest
 	{
 		public static async Task Main()
 		{
-			var data = await PlayerScraper.ScrapePetYard("");
+			var data = await PlayerScraper.ScrapeGraveyard("asdsadasdasd", 10);
 			Console.WriteLine(JsonSerializer.Serialize(data));
 		}
 	}

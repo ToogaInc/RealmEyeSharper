@@ -254,35 +254,23 @@ namespace RealmEyeSharper
 			if (IsPrivate(page))
 				return new PetYardData {ResultCode = ResultCode.NotFound};
 
-			var mainElem = page.Html.CssSelect(".col-md-12").First();
-			var petsPrivateTag = mainElem.SelectSingleNode("//div[@class='col-md-12']/h3");
-			if (petsPrivateTag != null)
-			{
-				if (petsPrivateTag.InnerText == "Pets are hidden.")
-					return new PetYardData
-					{
-						ResultCode = ResultCode.Success,
-						Pets = new List<PetEntry>(),
-						ProfileIsPrivate = false
-					};
-
-				if (petsPrivateTag.InnerText.Contains("has no pets."))
-					return new PetYardData
-					{
-						ResultCode = ResultCode.Success,
-						ProfileIsPrivate = false,
-						SectionIsPrivate = false,
-						Pets = new List<PetEntry>()
-					};
-			}
-
 			var returnData = new PetYardData
 			{
 				ResultCode = ResultCode.Success,
-				ProfileIsPrivate = false,
-				SectionIsPrivate = false,
-				Pets = new List<PetEntry>()
+				ProfileIsPrivate = false
 			};
+
+			var mainElem = page.Html.CssSelect(".col-md-12").First();
+			var petsPrivateTag = mainElem.SelectSingleNode("//div[@class='col-md-12']/h3");
+
+			if (petsPrivateTag != null && petsPrivateTag.InnerText == "Pets are hidden.")
+				return new PetYardData {ProfileIsPrivate = false};
+
+			returnData.SectionIsPrivate = false;
+			returnData.Pets = new List<PetEntry>();
+
+			if (petsPrivateTag != null && petsPrivateTag.InnerText.Contains("has no pets."))
+				return returnData; 
 
 			var petTable = page.Html
 				.CssSelect("#e")
@@ -681,7 +669,6 @@ namespace RealmEyeSharper
 			var returnData = new NameHistoryData
 			{
 				ResultCode = ResultCode.Success,
-				NameHistory = new List<NameHistoryEntry>(),
 				ProfileIsPrivate = false
 			};
 
@@ -691,6 +678,8 @@ namespace RealmEyeSharper
 				return returnData;
 
 			returnData.SectionIsPrivate = false;
+			returnData.NameHistory = new List<NameHistoryEntry>();
+
 			var nameHistExists = colMd.SelectNodes("//div[@class='col-md-12']/p/text()");
 			if (nameHistExists.Count == 2 && nameHistExists.Last().InnerText.Contains("No name changes detected."))
 				return returnData;
@@ -737,7 +726,6 @@ namespace RealmEyeSharper
 			var returnData = new RankHistoryData
 			{
 				ProfileIsPrivate = false,
-				RankHistory = new List<RankHistoryEntry>(),
 				ResultCode = ResultCode.Success
 			};
 
@@ -748,6 +736,7 @@ namespace RealmEyeSharper
 				return returnData;
 
 			returnData.SectionIsPrivate = false;
+			returnData.RankHistory = new List<RankHistoryEntry>();
 
 			var rankHistoryColl = page.Html
 				.CssSelect(".table-responsive")
@@ -792,7 +781,6 @@ namespace RealmEyeSharper
 
 			var returnData = new GuildHistoryData
 			{
-				GuildHistory = new List<GuildHistoryEntry>(),
 				ProfileIsPrivate = false,
 				ResultCode = ResultCode.Success
 			};
@@ -803,6 +791,7 @@ namespace RealmEyeSharper
 				return returnData;
 
 			returnData.SectionIsPrivate = false;
+			returnData.GuildHistory = new List<GuildHistoryEntry>();
 
 			var guildHistExists = colMd.SelectNodes("//div[@class='col-md-12']/h3/text()");
 			if (guildHistExists != null

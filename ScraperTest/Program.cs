@@ -10,7 +10,7 @@ namespace ScraperTest
 	{
 		public static async Task Main()
 		{
-			var data = await PlayerScraper.ScrapeExaltationsAsync("CandyShi");
+			var data = await PlayerScraper.ScrapeExaltationsAsync("blue");
 			Console.WriteLine(JsonSerializer.Serialize(data));
 		}
 	}

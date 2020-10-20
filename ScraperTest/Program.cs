@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using RealmEyeSharper;
 
@@ -9,7 +10,7 @@ namespace ScraperTest
 	{
 		public static async Task Main()
 		{
-			var data = await PlayerScraper.ScrapeRankHistoryAsync("");
+			var data = await PlayerScraper.ScrapeExaltationsAsync("CandyShi");
 			Console.WriteLine(JsonSerializer.Serialize(data));
 		}
 	}

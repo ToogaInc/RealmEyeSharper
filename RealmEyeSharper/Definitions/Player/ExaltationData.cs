@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RealmEyeSharper.Definitions.Player
 {
-	public class ExaltationData
+	public class ExaltationData : RealmEyeResponse
 	{
 		public IList<ExaltationEntry> Exaltations { get; set; }
 	}

@@ -834,5 +834,132 @@ namespace RealmEyeSharper
 
 			return returnData;
 		}
+
+		/// <summary>
+		/// <para>Returns the player's exaltation data.</para>
+		/// </summary>
+		/// <param name="name">The name of the person to look up..</param>
+		/// <returns>The person's exaltations.</returns>
+		public static async Task<ExaltationData> ScrapeExaltationsAsync(string name)
+		{
+			var page = await Browser
+				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{ExaltationSegment}/{name}"));
+
+			if (page == null)
+				return new ExaltationData {ResultCode = ResultCode.ServiceUnavailable};
+
+			if (IsPrivate(page))
+				return new ExaltationData {ResultCode = ResultCode.NotFound};
+
+			var returnData = new ExaltationData
+			{
+				ProfileIsPrivate = false,
+				ResultCode = ResultCode.Success
+			};
+
+			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
+
+			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Exaltations are hidden"))
+				return returnData;
+
+			returnData.SectionIsPrivate = false;
+			returnData.Exaltations = new List<ExaltationEntry>();
+
+			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("No exaltations"))
+				return returnData;
+
+			var exaltationTable = page.Html
+				.CssSelect(".table-responsive")
+				.CssSelect(".table")
+				.First()
+				// <tbody><tr>
+				.SelectNodes("tbody/tr");
+
+			// td[2] = class
+			// td[3] = exaltation amount (8 stats * 5 possible exaltation per stat = 40 total)
+			// td[4] = max hp
+			// td[5] = max mp
+			// td[6] = att
+			// td[7] = def
+			// td[8] = spd
+			// td[9] = dex
+			// td[10] = vit
+			// td[11] = wis
+			foreach (var row in exaltationTable)
+			{
+				var className = row.SelectSingleNode("td[2]").InnerText;
+				var totalExaltations = int.Parse(row.SelectSingleNode("td[3]")
+					.FirstChild.InnerText);
+
+				// individual stats
+				var hpUnparsed = row.SelectSingleNode("td[4]").ChildNodes;
+				var hpExaltations = hpUnparsed.Count == 0
+					? 0
+					: int.Parse(hpUnparsed.First().InnerText
+						.Replace("+", string.Empty));
+
+				var mpUnparsed = row.SelectSingleNode("td[5]").ChildNodes;
+				var mpExaltations = mpUnparsed.Count == 0
+					? 0
+					: int.Parse(mpUnparsed.First().InnerText
+						.Replace("+", string.Empty));
+
+				var attUnparsed = row.SelectSingleNode("td[6]").ChildNodes;
+				var attExaltations = attUnparsed.Count == 0
+					? 0
+					: int.Parse(attUnparsed[0].InnerText
+						.Replace("+", string.Empty));
+
+				var defUnparsed = row.SelectSingleNode("td[7]").ChildNodes;
+				var defExaltations = defUnparsed.Count == 0
+					? 0
+					: int.Parse(defUnparsed[0].InnerText
+						.Replace("+", string.Empty));
+
+				var spdUnparsed = row.SelectSingleNode("td[8]").ChildNodes;
+				var spdExaltations = spdUnparsed.Count == 0
+					? 0
+					: int.Parse(spdUnparsed[0].InnerText
+						.Replace("+", string.Empty));
+
+				var dexUnparsed = row.SelectSingleNode("td[9]").ChildNodes;
+				var dexExaltations = dexUnparsed.Count == 0
+					? 0
+					: int.Parse(dexUnparsed[0].InnerText
+						.Replace("+", string.Empty));
+
+				var vitUnparsed = row.SelectSingleNode("td[10]").ChildNodes;
+				var vitExaltations = vitUnparsed.Count == 0
+					? 0
+					: int.Parse(vitUnparsed[0].InnerText
+						.Replace("+", string.Empty));
+
+				var wisUnparsed = row.SelectSingleNode("td[11]").ChildNodes;
+				var wisExaltations = wisUnparsed.Count == 0
+					? 0
+					: int.Parse(wisUnparsed[0].InnerText
+						.Replace("+", string.Empty));
+
+				returnData.Exaltations.Add(new ExaltationEntry
+				{
+					Class = className,
+					ExaltationAmount = totalExaltations,
+					ExaltationStats = new Stats
+					{
+						Attack = attExaltations,
+						Dexterity = dexExaltations,
+						Defense = defExaltations,
+						Health = hpExaltations / 5,
+						Magic = mpExaltations / 5,
+						Speed = spdExaltations,
+						Vitality = vitExaltations,
+						Wisdom = wisExaltations
+					}
+				});
+			}
+
+			return returnData;
+		}
 	}
 }

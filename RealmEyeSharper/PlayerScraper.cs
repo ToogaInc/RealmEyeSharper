@@ -8,6 +8,8 @@ using RealmEyeSharper.Definitions.Player;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
 
+// TODO: check and make sure name input is valid 
+
 namespace RealmEyeSharper
 {
 	public static class PlayerScraper
@@ -50,7 +52,7 @@ namespace RealmEyeSharper
 		/// </summary>
 		/// <param name="name">The name of the person to look up.</param>
 		/// <returns>The player data.</returns>
-		public static async Task<PlayerData> ScrapePlayerProfile(string name)
+		public static async Task<PlayerData> ScrapePlayerProfileAsync(string name)
 		{
 			var page = await Browser
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{PlayerSegment}/{name}"));
@@ -241,13 +243,13 @@ namespace RealmEyeSharper
 		/// </summary>
 		/// <param name="name">The name of the person to look up.</param>
 		/// <returns>The person's pet yard data.</returns>
-		public static async Task<PetYardData> ScrapePetYard(string name)
+		public static async Task<PetYardData> ScrapePetYardAsync(string name)
 		{
 			var page = await Browser
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{PetYardSegment}/{name}"));
 
 			if (page == null)
-				return new PetYardData {ResultCode = ResultCode.ServiceUnavailable, ProfileIsPrivate = false};
+				return new PetYardData {ResultCode = ResultCode.ServiceUnavailable};
 
 			if (IsPrivate(page))
 				return new PetYardData {ResultCode = ResultCode.NotFound};
@@ -393,7 +395,7 @@ namespace RealmEyeSharper
 		/// <param name="name">The name of the person to look up.</param>
 		/// <param name="limit">The maximum number of graveyard entries to look up.</param>
 		/// <returns>The person's graveyard.</returns>
-		public static async Task<GraveyardData> ScrapeGraveyard(string name, int limit = -1)
+		public static async Task<GraveyardData> ScrapeGraveyardAsync(string name, int limit = -1)
 		{
 			if (limit < -1)
 				limit = -1;
@@ -412,6 +414,11 @@ namespace RealmEyeSharper
 			// to do it.
 			var gyInfoPara = colMd.SelectSingleNode("//div[@class='col-md-12']/p/text()");
 			var gyInfoHead = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
+
+			if (gyInfoHead != null
+			    && gyInfoHead.InnerText.Contains("is hidden")
+			    && gyInfoHead.InnerText.Contains("The graveyard of"))
+				return new GraveyardData {ResultCode = ResultCode.Success, ProfileIsPrivate = false};
 
 			if (gyInfoHead != null && gyInfoHead.InnerText == "No data available yet.")
 				return new GraveyardData
@@ -451,7 +458,8 @@ namespace RealmEyeSharper
 			for (var index = 1; index <= lowestPossibleAmt + 1; index += 100)
 			{
 				if (index != 1)
-					page = Browser.NavigateToPage(new Uri($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}/{index}"));
+					page = await Browser
+						.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}/{index}"));
 
 				var graveyardTable = page.Html
 					.CssSelect(".table-responsive")
@@ -516,6 +524,313 @@ namespace RealmEyeSharper
 
 			if (limit != -1)
 				returnData.Graveyard = returnData.Graveyard.Take(limit).ToArray();
+
+			return returnData;
+		}
+
+		/// <summary>
+		/// <para>Returns the player's graveyard summary.</para>
+		/// </summary>
+		/// <param name="name">The name of the person to look up.</param>
+		/// <returns>The person's graveyard summary.</returns>
+		public static async Task<GraveyardSummaryData> ScrapeGraveyardSummaryAsync(string name)
+		{
+			var page = await Browser
+				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSummarySegment}/{name}"));
+
+			if (page == null)
+				return new GraveyardSummaryData {ResultCode = ResultCode.ServiceUnavailable};
+
+			if (IsPrivate(page))
+				return new GraveyardSummaryData {ResultCode = ResultCode.NotFound};
+
+			// this probably isnt the best way
+			// to do it.
+			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var gyInfoHead = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
+
+			if (gyInfoHead != null
+			    && gyInfoHead.InnerText.Contains("is hidden")
+			    && gyInfoHead.InnerText.Contains("The graveyard of"))
+				return new GraveyardSummaryData {ResultCode = ResultCode.Success, ProfileIsPrivate = false};
+
+			var returnData = new GraveyardSummaryData
+			{
+				ResultCode = ResultCode.Success,
+				ProfileIsPrivate = false,
+				SectionIsPrivate = false,
+				Properties = new List<GraveyardSummaryProperty>(),
+				StatsCharacters = new List<MaxedStatsByCharacters>(),
+				TechnicalProperties = new List<GraveyardTechnicalProperty>()
+			};
+
+			if (gyInfoHead != null && gyInfoHead.InnerText == "No data available yet.")
+				return returnData;
+
+			var firstSummaryTable = page.Html
+				.CssSelect("#e")
+				.First()
+				// <tbody><tr>
+				.SelectNodes("tr");
+
+			// td[1] => random
+			// td[2] => name
+			// td[3] => total
+			// td[4] => max
+			// td[5] => avg
+			// td[6] => min
+			var props = firstSummaryTable.Select(row => new GraveyardSummaryProperty
+			{
+				Achievement = row.SelectSingleNode("td[2]").InnerText,
+				Total = long.Parse(row.SelectSingleNode("td[3]").InnerText),
+				Max = long.Parse(row.SelectSingleNode("td[4]").InnerText),
+				Average = double.Parse(row.SelectSingleNode("td[5]").InnerText),
+				Min = long.Parse(row.SelectSingleNode("td[6]").InnerText)
+			}).ToList();
+
+			var secondSummaryTable = page.Html
+				.CssSelect("#f")
+				.First()
+				.SelectNodes("tr");
+
+			// td[1] => name
+			// td[2] => total
+			// td[3] => max
+			// td[4] => avg
+			// td[5] => min
+			var techProps = secondSummaryTable.Select(row => new GraveyardTechnicalProperty
+			{
+				Achievement = row.SelectSingleNode("td[1]").InnerText,
+				Total = row.SelectSingleNode("td[2]").InnerText,
+				Max = row.SelectSingleNode("td[3]").InnerText,
+				Average = row.SelectSingleNode("td[4]").InnerText,
+				Min = row.SelectSingleNode("td[5]").InnerText
+			}).ToList();
+
+			var thirdSummaryTable = page.Html
+				.CssSelect("#g")
+				.First()
+				.SelectNodes("tbody/tr");
+
+			// td[1] => class
+			// td[2] => 0/8
+			// td[3] => 1/8
+			// ...
+			// td[n] = (n - 2)/8
+			// n <= 10
+			// td[last] = td[11] = total
+			var charInfo = thirdSummaryTable.Select(row => new MaxedStatsByCharacters
+			{
+				CharacterType = row.SelectSingleNode("td[1]").InnerText,
+				Stats = new[]
+				{
+					row.SelectSingleNode("td[2]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[2]").InnerText),
+					row.SelectSingleNode("td[3]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[3]").InnerText),
+					row.SelectSingleNode("td[4]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[4]").InnerText),
+					row.SelectSingleNode("td[5]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[5]").InnerText),
+					row.SelectSingleNode("td[6]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[6]").InnerText),
+					row.SelectSingleNode("td[7]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[7]").InnerText),
+					row.SelectSingleNode("td[8]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[8]").InnerText),
+					row.SelectSingleNode("td[9]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[9]").InnerText),
+					row.SelectSingleNode("td[10]").InnerText == string.Empty
+						? 0
+						: int.Parse(row.SelectSingleNode("td[10]").InnerText),
+				},
+				Total = int.Parse(row.SelectSingleNode("td[11]").InnerText)
+			}).ToList();
+
+			returnData.Properties = props;
+			returnData.StatsCharacters = charInfo;
+			returnData.TechnicalProperties = techProps;
+
+			return returnData;
+		}
+
+		/// <summary>
+		/// <para>Returns the player's name history.</para>
+		/// </summary>
+		/// <param name="name">The name of the person to look up.</param>
+		/// <returns>The person's name history.</returns>
+		public static async Task<NameHistoryData> ScrapeNameHistoryAsync(string name)
+		{
+			var page = await Browser
+				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{NameHistorySegment}/{name}"));
+
+			if (page == null)
+				return new NameHistoryData {ResultCode = ResultCode.ServiceUnavailable};
+
+			if (IsPrivate(page))
+				return new NameHistoryData {ResultCode = ResultCode.NotFound};
+
+			var returnData = new NameHistoryData
+			{
+				ResultCode = ResultCode.Success,
+				NameHistory = new List<NameHistoryEntry>(),
+				ProfileIsPrivate = false
+			};
+
+			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
+			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Name history is hidden"))
+				return returnData;
+
+			returnData.SectionIsPrivate = false;
+			var nameHistExists = colMd.SelectNodes("//div[@class='col-md-12']/p/text()");
+			if (nameHistExists.Count == 2 && nameHistExists.Last().InnerText.Contains("No name changes detected."))
+				return returnData;
+
+			var nameHistoryColl = page.Html
+				.CssSelect(".table-responsive")
+				.CssSelect(".table")
+				.First()
+				// <tbody><tr>
+				.SelectNodes("tbody/tr");
+
+			// td[1] => name
+			// td[2] => from
+			// td[3] => to
+			foreach (var nameHistoryEntry in nameHistoryColl)
+			{
+				returnData.NameHistory.Add(new NameHistoryEntry
+				{
+					Name = nameHistoryEntry.SelectSingleNode("td[1]").InnerText,
+					From = nameHistoryEntry.SelectSingleNode("td[2]").InnerText,
+					To = nameHistoryEntry.SelectSingleNode("td[3]").InnerText
+				});
+			}
+
+			return returnData;
+		}
+
+		/// <summary>
+		/// <para>Returns the player's rank history.</para>
+		/// </summary>
+		/// <param name="name">The name of the person to look up.</param>
+		/// <returns>The person's rank history.</returns>
+		public static async Task<RankHistoryData> ScrapeRankHistoryAsync(string name)
+		{
+			var page = await Browser
+				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{RankHistorySegment}/{name}"));
+
+			if (page == null)
+				return new RankHistoryData {ResultCode = ResultCode.ServiceUnavailable};
+
+			if (IsPrivate(page))
+				return new RankHistoryData {ResultCode = ResultCode.NotFound};
+
+			var returnData = new RankHistoryData
+			{
+				ProfileIsPrivate = false,
+				RankHistory = new List<RankHistoryEntry>(),
+				ResultCode = ResultCode.Success
+			};
+
+			var colMd = page.Html.CssSelect(".col-md-12").First();
+
+			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
+			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Rank history is hidden"))
+				return returnData;
+
+			returnData.SectionIsPrivate = false;
+
+			var rankHistoryColl = page.Html
+				.CssSelect(".table-responsive")
+				.CssSelect(".table")
+				.First()
+				// <tbody><tr>
+				.SelectNodes("tbody/tr");
+
+			// td[1] => rank
+			// td[2] => achieved
+			foreach (var rankHistEntry in rankHistoryColl)
+			{
+				var rank = int.Parse(rankHistEntry.SelectSingleNode("td[1]").FirstChild.InnerText);
+				var since = rankHistEntry.SelectSingleNode("td[2]").InnerText;
+				var date = rankHistEntry.SelectSingleNode("td[2]").FirstChild.Attributes["title"].Value;
+				returnData.RankHistory.Add(new RankHistoryEntry
+				{
+					Achieved = since,
+					Date = date,
+					Rank = rank
+				});
+			}
+
+			return returnData;
+		}
+
+		/// <summary>
+		/// <para>Returns the player's guild history.</para>
+		/// </summary>
+		/// <param name="name">The name of the person to look up.</param>
+		/// <returns>The person's guild history.</returns>
+		public static async Task<GuildHistoryData> ScrapeGuildHistoryAsync(string name)
+		{
+			var page = await Browser
+				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}"));
+
+			if (page == null)
+				return new GuildHistoryData {ResultCode = ResultCode.ServiceUnavailable};
+
+			if (IsPrivate(page))
+				return new GuildHistoryData {ResultCode = ResultCode.NotFound};
+
+			var returnData = new GuildHistoryData
+			{
+				GuildHistory = new List<GuildHistoryEntry>(),
+				ProfileIsPrivate = false,
+				ResultCode = ResultCode.Success
+			};
+
+			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
+			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Guild history is hidden"))
+				return returnData;
+
+			returnData.SectionIsPrivate = false;
+
+			var guildHistExists = colMd.SelectNodes("//div[@class='col-md-12']/h3/text()");
+			if (guildHistExists != null
+			    && guildHistExists.Count == 2
+			    && guildHistExists.Last().InnerText.Contains("No guild changes detected."))
+				return returnData;
+
+			var guildHistoryColl = page.Html
+				.CssSelect(".table-responsive")
+				.CssSelect(".table")
+				.First()
+				// <tbody><tr>
+				.SelectNodes("tbody/tr");
+
+			// td[1] => guild name
+			// td[2] => rank
+			// td[3] => from
+			// td[4] => to
+			foreach (var guildHistoryRow in guildHistoryColl)
+			{
+				returnData.GuildHistory.Add(new GuildHistoryEntry
+				{
+					GuildName = guildHistoryRow.SelectSingleNode("td[1]").FirstChild.InnerText,
+					GuildRank = guildHistoryRow.SelectSingleNode("td[2]").InnerText,
+					From = guildHistoryRow.SelectSingleNode("td[3]").InnerText,
+					To = guildHistoryRow.SelectSingleNode("td[4]").InnerText
+				});
+			}
 
 			return returnData;
 		}

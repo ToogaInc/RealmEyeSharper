@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Authors>Edward Wang</Authors>
+    <Description>A scraper that can scrape various parts of a person's RealmEye profile.</Description>
+    <Copyright>Edward Wang</Copyright>
+    <PackageProjectUrl>https://github.com/ewang2002/RealmEyeSharper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ewang2002/RealmEyeSharper</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <PackageTags>realmeye, rotmg, realmeye-api</PackageTags>
+    <Company />
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Colourful" Version="2.0.5" />
+    <PackageReference Include="ScrapySharp" Version="3.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
+    <PackageReference Include="Tesseract" Version="4.1.0-beta1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="tessdata\eng.traineddata">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

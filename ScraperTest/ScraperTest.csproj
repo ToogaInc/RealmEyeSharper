@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RealmEyeSharper\RealmEyeSharper.csproj" />
+    <ProjectReference Include="..\RealmSharper\RealmSharper.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,7 +2,9 @@
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using RealmEyeSharper;
+using RealmSharper;
+using RealmSharper.RaidUtil;
+using RealmSharper.RealmEye;
 
 namespace ScraperTest
 {
@@ -10,8 +12,10 @@ namespace ScraperTest
 	{
 		public static async Task Main()
 		{
-			var data = await PlayerScraper.ScrapeExaltationsAsync("blue");
-			Console.WriteLine(JsonSerializer.Serialize(data));
+			var arr = await WhoParser.ParseWhoScreenshot(new WhoInput
+				{Url = "" });
+			Console.WriteLine(string.Join(", ", arr));
+			Console.WriteLine($"{arr.Length} People Found!");
 		}
 	}
 }

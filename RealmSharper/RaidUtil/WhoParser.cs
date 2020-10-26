@@ -6,8 +6,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Colourful;
-using Colourful.Conversion;
-using Colourful.Difference;
 using Tesseract;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
@@ -19,7 +17,6 @@ namespace RealmSharper.RaidUtil
 
 		public static async Task<string[]> ParseWhoScreenshot(WhoInput input)
 		{
-			Console.WriteLine(input.Url);
 			Bitmap image = null;
 			if (input.Url != null)
 			{
@@ -36,26 +33,30 @@ namespace RealmSharper.RaidUtil
 			if (image == null)
 				return new string[0];
 
-			var baseYellow = new RGBColor(1, 1, 0);
+			// this is a slight shade of yellow but divide each value by 255
+			var baseYellow = new RGBColor(0.8928976034858388, 0.9003921568627451, 0.04435729847494554);
+			var converter = new ConverterBuilder()
+				.FromRGB()
+				.ToLab()
+				.Build();
 			for (var x = 0; x < image.Width; ++x)
 			{
 				for (var y = 0; y < image.Height; ++y)
 				{
 					var pixel = image.GetPixel(x, y);
 					var rgbColor = new RGBColor(pixel.R / 255.0, pixel.G / 255.0, pixel.B / 255.0);
-					var labColorOfBaseYellow = new ColourfulConverter()
-						.ToLab(baseYellow);
-					var labColorOfPixel = new ColourfulConverter()
-						.ToLab(rgbColor);
+					var labColorOfBaseYellow = converter.Convert(baseYellow);
+					var labColorOfPixel = converter.Convert(rgbColor);
 					var deltaE = new CIEDE2000ColorDifference()
 						.ComputeDifference(labColorOfBaseYellow, labColorOfPixel);
 
-					image.SetPixel(x, y, deltaE < 20 ? Color.Black : Color.White);
+					image.SetPixel(x, y, deltaE < 10 ? Color.Black : Color.White);
 				}
 			}
 
 			await using var anotherStream = new MemoryStream();
 			image.Save(anotherStream, ImageFormat.Png);
+			image.Save(@"C:\Users\ewang\Desktop\bigTest.png", ImageFormat.Png);
 
 			using var engine = new TesseractEngine(Path.Join(".", "tessdata"), "eng", EngineMode.Default);
 			using var page = engine.Process(Pix.LoadFromMemory(anotherStream.ToArray()));
@@ -104,6 +105,13 @@ namespace RealmSharper.RaidUtil
 					.Where(x => x != string.Empty)
 					.ToArray();
 
+				if (peopleInThisLine.Length == 0)
+				{
+					++emptyLineSuccession;
+					continue;
+				}
+
+				emptyLineSuccession = 0;
 
 				foreach (var name in peopleInThisLine)
 					nameArr.Add(name);

@@ -8,8 +8,6 @@ using RealmSharper.RealmEye.Definitions.Player;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
 
-// TODO: check and make sure name input is valid 
-
 namespace RealmSharper.RealmEye
 {
 	public static class PlayerScraper

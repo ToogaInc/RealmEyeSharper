@@ -12,10 +12,22 @@ namespace ScraperTest
 	{
 		public static async Task Main()
 		{
-			var arr = await WhoParser.ParseWhoScreenshot(new WhoInput
-				{Url = "" });
-			Console.WriteLine(string.Join(", ", arr));
-			Console.WriteLine($"{arr.Length} People Found!");
+			while (true)
+			{
+				var input = Console.ReadLine();
+				if (string.IsNullOrEmpty(input))
+					continue;
+				
+				if (input.ToLower() == "exit")
+					break;
+
+
+				var arr = await WhoParser.ParseWhoScreenshot(new WhoInput
+					{ Url = input });
+				Console.WriteLine(string.Join(", ", arr));
+				Console.WriteLine($"{arr.Length} People Found!");
+				Console.WriteLine("===================");
+			}
 		}
 	}
 }

@@ -56,10 +56,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{PlayerSegment}/{name}"));
 
 			if (page == null)
-				return new PlayerData {ResultCode = ResultCode.ServiceUnavailable};
+				return new PlayerData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new PlayerData {ResultCode = ResultCode.NotFound};
+				return new PlayerData {ResultCode = ResultCode.NotFound, Name = name};
 
 			// profile public
 			// scrap time
@@ -161,6 +161,9 @@ namespace RealmSharper.RealmEye
 			// td[8] => place
 			// td[9] => equipment
 			// td[10] => stats
+			if (charTable == null)
+				return returnData;
+
 			foreach (var characterRow in charTable)
 			{
 				var petIdRaw = characterRow.SelectSingleNode("td[1]").FirstChild;
@@ -247,15 +250,16 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{PetYardSegment}/{name}"));
 
 			if (page == null)
-				return new PetYardData {ResultCode = ResultCode.ServiceUnavailable};
+				return new PetYardData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
 
 			if (IsPrivate(page))
-				return new PetYardData {ResultCode = ResultCode.NotFound};
+				return new PetYardData {ResultCode = ResultCode.NotFound, Name = name };
 
 			var returnData = new PetYardData
 			{
 				ResultCode = ResultCode.Success,
-				ProfileIsPrivate = false
+				ProfileIsPrivate = false,
+				Name = name
 			};
 
 			var mainElem = page.Html.CssSelect(".col-md-12").First();
@@ -268,7 +272,7 @@ namespace RealmSharper.RealmEye
 			returnData.Pets = new List<PetEntry>();
 
 			if (petsPrivateTag != null && petsPrivateTag.InnerText.Contains("has no pets."))
-				return returnData; 
+				return returnData;
 
 			var petTable = page.Html
 				.CssSelect("#e")
@@ -390,10 +394,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}"));
 
 			if (page == null)
-				return new GraveyardData {ResultCode = ResultCode.ServiceUnavailable};
+				return new GraveyardData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
 
 			if (IsPrivate(page))
-				return new GraveyardData {ResultCode = ResultCode.NotFound};
+				return new GraveyardData {ResultCode = ResultCode.NotFound, Name = name };
 
 			var colMd = page.Html.CssSelect(".col-md-12").First();
 			// this probably isnt the best way
@@ -412,7 +416,8 @@ namespace RealmSharper.RealmEye
 					ResultCode = ResultCode.Success,
 					Graveyard = new List<GraveyardEntry>(),
 					ProfileIsPrivate = false,
-					SectionIsPrivate = false
+					SectionIsPrivate = false,
+					Name = name
 				};
 
 			var numGraveyards = 0;
@@ -427,7 +432,8 @@ namespace RealmSharper.RealmEye
 				Graveyard = new List<GraveyardEntry>(),
 				ResultCode = ResultCode.Success,
 				ProfileIsPrivate = false,
-				SectionIsPrivate = false
+				SectionIsPrivate = false,
+				Name = name
 			};
 
 			// no dead characters
@@ -525,10 +531,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSummarySegment}/{name}"));
 
 			if (page == null)
-				return new GraveyardSummaryData {ResultCode = ResultCode.ServiceUnavailable};
+				return new GraveyardSummaryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
 
 			if (IsPrivate(page))
-				return new GraveyardSummaryData {ResultCode = ResultCode.NotFound};
+				return new GraveyardSummaryData {ResultCode = ResultCode.NotFound, Name = name };
 
 			// this probably isnt the best way
 			// to do it.
@@ -538,7 +544,7 @@ namespace RealmSharper.RealmEye
 			if (gyInfoHead != null
 			    && gyInfoHead.InnerText.Contains("is hidden")
 			    && gyInfoHead.InnerText.Contains("The graveyard of"))
-				return new GraveyardSummaryData {ResultCode = ResultCode.Success, ProfileIsPrivate = false};
+				return new GraveyardSummaryData {ResultCode = ResultCode.Success, ProfileIsPrivate = false, Name = name };
 
 			var returnData = new GraveyardSummaryData
 			{
@@ -547,7 +553,8 @@ namespace RealmSharper.RealmEye
 				SectionIsPrivate = false,
 				Properties = new List<GraveyardSummaryProperty>(),
 				StatsCharacters = new List<MaxedStatsByCharacters>(),
-				TechnicalProperties = new List<GraveyardTechnicalProperty>()
+				TechnicalProperties = new List<GraveyardTechnicalProperty>(),
+				Name = name
 			};
 
 			if (gyInfoHead != null && gyInfoHead.InnerText == "No data available yet.")
@@ -659,15 +666,16 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{NameHistorySegment}/{name}"));
 
 			if (page == null)
-				return new NameHistoryData {ResultCode = ResultCode.ServiceUnavailable};
+				return new NameHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
 
 			if (IsPrivate(page))
-				return new NameHistoryData {ResultCode = ResultCode.NotFound};
+				return new NameHistoryData {ResultCode = ResultCode.NotFound, Name = name };
 
 			var returnData = new NameHistoryData
 			{
 				ResultCode = ResultCode.Success,
-				ProfileIsPrivate = false
+				ProfileIsPrivate = false,
+				Name = name
 			};
 
 			var colMd = page.Html.CssSelect(".col-md-12").First();
@@ -716,15 +724,16 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{RankHistorySegment}/{name}"));
 
 			if (page == null)
-				return new RankHistoryData {ResultCode = ResultCode.ServiceUnavailable};
+				return new RankHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
 
 			if (IsPrivate(page))
-				return new RankHistoryData {ResultCode = ResultCode.NotFound};
+				return new RankHistoryData {ResultCode = ResultCode.NotFound, Name = name };
 
 			var returnData = new RankHistoryData
 			{
 				ProfileIsPrivate = false,
-				ResultCode = ResultCode.Success
+				ResultCode = ResultCode.Success,
+				Name = name
 			};
 
 			var colMd = page.Html.CssSelect(".col-md-12").First();
@@ -772,15 +781,16 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}"));
 
 			if (page == null)
-				return new GuildHistoryData {ResultCode = ResultCode.ServiceUnavailable};
+				return new GuildHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
 
 			if (IsPrivate(page))
-				return new GuildHistoryData {ResultCode = ResultCode.NotFound};
+				return new GuildHistoryData {ResultCode = ResultCode.NotFound, Name = name };
 
 			var returnData = new GuildHistoryData
 			{
 				ProfileIsPrivate = false,
-				ResultCode = ResultCode.Success
+				ResultCode = ResultCode.Success,
+				Name = name
 			};
 
 			var colMd = page.Html.CssSelect(".col-md-12").First();
@@ -833,15 +843,16 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{ExaltationSegment}/{name}"));
 
 			if (page == null)
-				return new ExaltationData {ResultCode = ResultCode.ServiceUnavailable};
+				return new ExaltationData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
 
 			if (IsPrivate(page))
-				return new ExaltationData {ResultCode = ResultCode.NotFound};
+				return new ExaltationData {ResultCode = ResultCode.NotFound, Name = name };
 
 			var returnData = new ExaltationData
 			{
 				ProfileIsPrivate = false,
-				ResultCode = ResultCode.Success
+				ResultCode = ResultCode.Success,
+				Name = name
 			};
 
 			var colMd = page.Html.CssSelect(".col-md-12").First();

@@ -15,6 +15,11 @@ namespace RealmSharper.RaidUtil
 	{
 		private static readonly HttpClient Client = new HttpClient();
 
+		/// <summary>
+		/// Parses a /who screenshot.
+		/// </summary>
+		/// <param name="input">The input, which should be a Url.</param>
+		/// <returns>The parsed names.</returns>
 		public static async Task<string[]> ParseWhoScreenshot(WhoInput input)
 		{
 			Bitmap image = null;
@@ -50,9 +55,10 @@ namespace RealmSharper.RaidUtil
 					var deltaE = new CIEDE2000ColorDifference()
 						.ComputeDifference(labColorOfBaseYellow, labColorOfPixel);
 
-					image.SetPixel(x, y, deltaE < 10 ? Color.Black : Color.White);
+					image.SetPixel(x, y, deltaE < 15 ? Color.Black : Color.White);
 				}
 			}
+
 
 			await using var anotherStream = new MemoryStream();
 			image.Save(anotherStream, ImageFormat.Png);
@@ -64,11 +70,11 @@ namespace RealmSharper.RaidUtil
 				.Select(x => x.Trim())
 				.ToArray();
 
-			var index = -1; 
+			var index = -1;
 			for (var i = 0; i < textArr.Length; ++i)
 			{
-				if (!textArr[i].ToLower().StartsWith("players online") 
-				    || !textArr[i].ToLower().Contains("):")) 
+				if (!textArr[i].ToLower().StartsWith("players online")
+				    || !textArr[i].ToLower().Contains("):"))
 					continue;
 				index = i;
 				break;
@@ -85,7 +91,7 @@ namespace RealmSharper.RaidUtil
 				.ToArray();
 
 			foreach (var name in peopleInFirstLine)
-				nameArr.Add(name);
+				nameArr.Add(name.Replace('0', 'O').Replace('1', 'I'));
 
 			var emptyLineSuccession = 0;
 			for (var i = index + 1; i < textArr.Length; ++i)
@@ -96,7 +102,7 @@ namespace RealmSharper.RaidUtil
 					++emptyLineSuccession;
 					continue;
 				}
-				
+
 				if (emptyLineSuccession >= 2)
 					break;
 
@@ -114,7 +120,7 @@ namespace RealmSharper.RaidUtil
 				emptyLineSuccession = 0;
 
 				foreach (var name in peopleInThisLine)
-					nameArr.Add(name);
+					nameArr.Add(name.Replace('0', 'O').Replace('1', 'I'));
 			}
 
 			return nameArr.ToArray();

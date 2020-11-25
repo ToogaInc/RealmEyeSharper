@@ -18,11 +18,7 @@ namespace ScraperTest
 					break;
 
 
-				var arr = await WhoParser.ParseWhoScreenshot(new WhoInput
-					{ Url = input });
-				Console.WriteLine(string.Join(", ", arr));
-				Console.WriteLine($"{arr.Length} People Found!");
-				Console.WriteLine("===================");
+				await RealmSharper.RealmEye.PlayerScraper.ScrapePlayerProfileAsync(input);
 			}
 		}
 	}

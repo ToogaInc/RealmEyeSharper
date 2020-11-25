@@ -120,24 +120,15 @@ namespace RealmSharper.RealmEye
 				}
 			}
 
-			var mainElement = page.Html.CssSelect(".col-md-12");
-			// #d is id = "d" (in html)
-			var descriptionTable = mainElement.CssSelect("#d").First();
-			var noDesc = descriptionTable.CssSelect(".help");
-			if (noDesc.Any())
-				returnData.Description = new string[0];
-			else
+			var finalDesc = new List<string>();
+			for (var i = 1; i <= 3; i++)
 			{
-				returnData.Description = new string[3];
-				returnData.Description[0] = WebUtility.HtmlDecode(descriptionTable.FirstChild.InnerText);
-				returnData.Description[1] = WebUtility.HtmlDecode(descriptionTable.FirstChild.NextSibling.InnerText);
-				returnData.Description[2] = WebUtility
-					.HtmlDecode(descriptionTable.FirstChild.NextSibling.NextSibling.InnerText);
-
-				returnData.Description = returnData.Description
-					.Where(x => x != "")
-					.ToArray();
+				var possDesc = page.Html.SelectNodes($"//div[contains(@class, 'line{i}')]");
+				if (possDesc != null && possDesc.Count != 0 && possDesc[0].InnerText.Length != 0)
+					finalDesc.Add(possDesc[0].InnerText);
 			}
+
+			returnData.Description = finalDesc.ToArray();
 
 			returnData.Characters = new List<CharacterEntry>();
 			// character parsing
@@ -147,11 +138,9 @@ namespace RealmSharper.RealmEye
 				return returnData;
 			}
 
+			// this is the only table with an id
 			var charTable = page.Html
-				.CssSelect("#e")
-				.First()
-				// <tbody><tr>
-				.SelectNodes("tbody/tr");
+				.SelectNodes("//table[@id]/tbody/tr");
 
 			// td[3] => character type
 			// td[4] => level
@@ -164,6 +153,7 @@ namespace RealmSharper.RealmEye
 			if (charTable == null)
 				return returnData;
 
+			// TODO it might be worth redoing this with a bunch of if statements in case RealmEye decides to change the character table 
 			foreach (var characterRow in charTable)
 			{
 				var petIdRaw = characterRow.SelectSingleNode("td[1]").FirstChild;
@@ -275,10 +265,7 @@ namespace RealmSharper.RealmEye
 				return returnData;
 
 			var petTable = page.Html
-				.CssSelect("#e")
-				.First()
-				// <tbody><tr>
-				.SelectNodes("tbody/tr");
+				.SelectNodes("//table[@id]/tbody/tr");
 
 			// td[1] => span class, data-item
 			// td[2] => name of pet
@@ -560,9 +547,15 @@ namespace RealmSharper.RealmEye
 			if (gyInfoHead != null && gyInfoHead.InnerText == "No data available yet.")
 				return returnData;
 
-			var firstSummaryTable = page.Html
-				.CssSelect("#e")
-				.First()
+			var allPossibleTables = page.Html
+				.CssSelect(".table-responsive")
+				.CssSelect(".table")
+				.ToArray();
+
+			if (allPossibleTables.Length != 3)
+				return returnData;
+			
+			var firstSummaryTable = allPossibleTables[0]
 				// <tbody><tr>
 				.SelectNodes("tr");
 
@@ -581,9 +574,7 @@ namespace RealmSharper.RealmEye
 				Min = long.Parse(row.SelectSingleNode("td[6]").InnerText)
 			}).ToList();
 
-			var secondSummaryTable = page.Html
-				.CssSelect("#f")
-				.First()
+			var secondSummaryTable = allPossibleTables[1]
 				.SelectNodes("tr");
 
 			// td[1] => name
@@ -600,9 +591,7 @@ namespace RealmSharper.RealmEye
 				Min = row.SelectSingleNode("td[5]").InnerText
 			}).ToList();
 
-			var thirdSummaryTable = page.Html
-				.CssSelect("#g")
-				.First()
+			var thirdSummaryTable = allPossibleTables[2]
 				.SelectNodes("tbody/tr");
 
 			// td[1] => class

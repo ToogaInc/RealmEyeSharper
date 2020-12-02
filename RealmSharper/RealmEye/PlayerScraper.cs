@@ -153,21 +153,47 @@ namespace RealmSharper.RealmEye
 			if (charTable == null)
 				return returnData;
 
-			// TODO it might be worth redoing this with a bunch of if statements in case RealmEye decides to change the character table 
 			foreach (var characterRow in charTable)
 			{
+				// pet: column 1
 				var petIdRaw = characterRow.SelectSingleNode("td[1]").FirstChild;
 				var petId = petIdRaw == null
 					? -1
 					: int.Parse(petIdRaw.Attributes["data-item"].Value);
 
+				// character display: column 2
+				// character class type: column 3
 				var characterType = characterRow.SelectSingleNode("td[3]").InnerText;
-				var level = int.Parse(characterRow.SelectSingleNode("td[4]").InnerText);
-				var cqc = int.Parse(characterRow.SelectSingleNode("td[5]").InnerText.Split('/')[0]);
-				var fame = int.Parse(characterRow.SelectSingleNode("td[6]").InnerText);
-				var exp = long.Parse(characterRow.SelectSingleNode("td[7]").InnerText);
-				var place = int.Parse(characterRow.SelectSingleNode("td[8]").InnerText);
 
+				// level of character
+				var level = int.TryParse(characterRow.SelectSingleNode("td[4]").InnerText, out var lvl)
+					? lvl
+					: -1;
+
+				// class quests completed
+				var cqcNode = characterRow.SelectSingleNode("td[5]");
+				var cqc = cqcNode.InnerText != null && cqcNode.InnerText.Contains('/')
+					? int.TryParse(cqcNode.InnerText.Split('/')[0], out var c)
+						? c
+						: -1
+					: -1;
+
+				// alive fame
+				var fame = int.TryParse(characterRow.SelectSingleNode("td[6]").InnerText, out var f)
+					? f
+					: -1;
+
+				// alive exp
+				var exp = long.TryParse(characterRow.SelectSingleNode("td[7]").InnerText, out var e)
+					? e
+					: -1;
+
+				// rank
+				var place = int.TryParse(characterRow.SelectSingleNode("td[8]").InnerText, out var p)
+					? p
+					: -1;
+
+				// equipment
 				var characterEquipment = new List<string>();
 				var equips = characterRow
 					.SelectSingleNode("td[9]")
@@ -182,10 +208,17 @@ namespace RealmSharper.RealmEye
 						: WebUtility.HtmlDecode(itemContainer.ChildNodes[0].Attributes["title"].Value));
 				}
 
+				// player stats 
 				// <span class = "player-stats" ...
 				var stats = characterRow
 					.SelectSingleNode("td[10]");
-				var maxedStats = int.Parse(stats.InnerText.Split('/')[0]);
+
+				var maxedStats = stats.InnerText != null && stats.InnerText.Contains('/')
+					? int.TryParse(stats.InnerText.Split('/')[0], out var ms)
+						? ms
+						: -1
+					: -1;
+
 				var dataStats = stats.FirstChild
 					.Attributes["data-stats"]
 					.Value[1..^1]
@@ -199,6 +232,27 @@ namespace RealmSharper.RealmEye
 					.Select(int.Parse)
 					.ToArray();
 
+				var charStats = new Dictionary<string, int>();
+				var possibleStats = new[]
+				{
+					"Health",
+					"Magic",
+					"Attack",
+					"Defense",
+					"Speed",
+					"Vitality",
+					"Wisdom",
+					"Dexterity"
+				};
+
+				var lengthOfStats = Math.Min(dataStats.Length, bonusStats.Length);
+				var indexOfStats = 0;
+				for (; indexOfStats < lengthOfStats; ++indexOfStats)
+					charStats.Add(possibleStats[indexOfStats], dataStats[indexOfStats] - bonusStats[indexOfStats]);
+
+				for (; indexOfStats < 8; ++indexOfStats)
+					charStats.Add(possibleStats[indexOfStats], -1);
+
 				returnData.Characters.Add(new CharacterEntry
 				{
 					ActivePetId = petId,
@@ -211,17 +265,7 @@ namespace RealmSharper.RealmEye
 					Level = level,
 					Place = place,
 					StatsMaxed = maxedStats,
-					Stats = new Stats
-					{
-						Health = dataStats[0] - bonusStats[0],
-						Magic = dataStats[1] - bonusStats[1],
-						Attack = dataStats[2] - bonusStats[2],
-						Defense = dataStats[3] - bonusStats[3],
-						Speed = dataStats[4] - bonusStats[4],
-						Vitality = dataStats[5] - bonusStats[5],
-						Wisdom = dataStats[6] - bonusStats[6],
-						Dexterity = dataStats[7] - bonusStats[7]
-					}
+					Stats = charStats
 				});
 			}
 
@@ -240,10 +284,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{PetYardSegment}/{name}"));
 
 			if (page == null)
-				return new PetYardData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
+				return new PetYardData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new PetYardData {ResultCode = ResultCode.NotFound, Name = name };
+				return new PetYardData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new PetYardData
 			{
@@ -381,10 +425,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}"));
 
 			if (page == null)
-				return new GraveyardData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
+				return new GraveyardData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new GraveyardData {ResultCode = ResultCode.NotFound, Name = name };
+				return new GraveyardData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var colMd = page.Html.CssSelect(".col-md-12").First();
 			// this probably isnt the best way
@@ -518,10 +562,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSummarySegment}/{name}"));
 
 			if (page == null)
-				return new GraveyardSummaryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
+				return new GraveyardSummaryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new GraveyardSummaryData {ResultCode = ResultCode.NotFound, Name = name };
+				return new GraveyardSummaryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			// this probably isnt the best way
 			// to do it.
@@ -531,7 +575,8 @@ namespace RealmSharper.RealmEye
 			if (gyInfoHead != null
 			    && gyInfoHead.InnerText.Contains("is hidden")
 			    && gyInfoHead.InnerText.Contains("The graveyard of"))
-				return new GraveyardSummaryData {ResultCode = ResultCode.Success, ProfileIsPrivate = false, Name = name };
+				return new GraveyardSummaryData
+					{ResultCode = ResultCode.Success, ProfileIsPrivate = false, Name = name};
 
 			var returnData = new GraveyardSummaryData
 			{
@@ -554,7 +599,7 @@ namespace RealmSharper.RealmEye
 
 			if (allPossibleTables.Length != 3)
 				return returnData;
-			
+
 			var firstSummaryTable = allPossibleTables[0]
 				// <tbody><tr>
 				.SelectNodes("tr");
@@ -655,10 +700,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{NameHistorySegment}/{name}"));
 
 			if (page == null)
-				return new NameHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
+				return new NameHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new NameHistoryData {ResultCode = ResultCode.NotFound, Name = name };
+				return new NameHistoryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new NameHistoryData
 			{
@@ -713,10 +758,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{RankHistorySegment}/{name}"));
 
 			if (page == null)
-				return new RankHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
+				return new RankHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new RankHistoryData {ResultCode = ResultCode.NotFound, Name = name };
+				return new RankHistoryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new RankHistoryData
 			{
@@ -770,10 +815,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}"));
 
 			if (page == null)
-				return new GuildHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
+				return new GuildHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new GuildHistoryData {ResultCode = ResultCode.NotFound, Name = name };
+				return new GuildHistoryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new GuildHistoryData
 			{
@@ -832,10 +877,10 @@ namespace RealmSharper.RealmEye
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{ExaltationSegment}/{name}"));
 
 			if (page == null)
-				return new ExaltationData {ResultCode = ResultCode.ServiceUnavailable, Name = name };
+				return new ExaltationData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(page))
-				return new ExaltationData {ResultCode = ResultCode.NotFound, Name = name };
+				return new ExaltationData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new ExaltationData
 			{

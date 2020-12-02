@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
@@ -30,19 +31,7 @@ namespace RealmSharper.RealmEye.Definitions.Player
 		public int Place { get; set; }
 		public string[] EquipmentData { get; set; }
 		public bool HasBackpack { get; set; }
-		public Stats Stats { get; set; }
+		public IDictionary<string, int> Stats { get; set; }
 		public int StatsMaxed { get; set; }
-	}
-
-	public struct Stats
-	{
-		public int Health { get; set; }
-		public int Magic { get; set; }
-		public int Attack { get; set; }
-		public int Defense { get; set; }
-		public int Speed { get; set; }
-		public int Vitality { get; set; }
-		public int Wisdom { get; set; }
-		public int Dexterity { get; set; }
 	}
 }

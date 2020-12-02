@@ -7,7 +7,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealmSharper", "RealmSharpe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScraperTest", "ScraperTest\ScraperTest.csproj", "{E7000EBB-5285-4D22-A6B6-F4F3909DEC1D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RealmAspNet", "RealmAspNet\RealmAspNet.csproj", "{4943662A-DD33-4E34-9769-54421CC34B3B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealmAspNet", "RealmAspNet\RealmAspNet.csproj", "{4943662A-DD33-4E34-9769-54421CC34B3B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C44B77EC-44E3-4ACE-B4BE-A167151D1F8C}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

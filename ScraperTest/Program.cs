@@ -16,8 +16,15 @@ namespace ScraperTest
 				if (input.ToLower() == "exit")
 					break;
 
+				var args = input.Split(" ");
+				if (args.Length == 0)
+					continue;
 
-				await RealmSharper.RealmEye.PlayerScraper.ScrapePlayerProfileAsync(input);
+				if (args[0] == "r")
+				{
+					var d = await RealmSharper.RealmEye.PlayerScraper.ScrapePlayerProfileAsync(args[1]);
+					Console.WriteLine(d.Name);
+				}
 			}
 		}
 	}

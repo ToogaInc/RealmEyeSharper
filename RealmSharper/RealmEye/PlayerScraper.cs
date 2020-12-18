@@ -30,7 +30,8 @@ namespace RealmSharper.RealmEye
 		internal static ScrapingBrowser Browser = new ScrapingBrowser
 		{
 			AllowAutoRedirect = true,
-			AllowMetaRedirect = true
+			AllowMetaRedirect = true,
+			UserAgent = new FakeUserAgent("RealmSharper", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
 		};
 
 		/// <summary>
@@ -421,6 +422,10 @@ namespace RealmSharper.RealmEye
 			if (limit < -1)
 				limit = -1;
 
+			// to avoid huge memory consumptions
+			if (limit > 100)
+				limit = 100;
+
 			var page = await Browser
 				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}"));
 
@@ -597,7 +602,7 @@ namespace RealmSharper.RealmEye
 				.CssSelect(".table")
 				.ToArray();
 
-			if (allPossibleTables.Length != 3)
+			if (allPossibleTables.Length < 3)
 				return returnData;
 
 			var firstSummaryTable = allPossibleTables[0]

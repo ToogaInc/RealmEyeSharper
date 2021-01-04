@@ -22,6 +22,7 @@ The following represents my plans for this project.
 <details>
 <summary>Click Here.</summary>
 <br>
+
 - [x] Basic Player Profile
 - [ ] Skins
 - [x] Exaltations
@@ -34,13 +35,14 @@ The following represents my plans for this project.
 - [x] Rank History
 - [x] Name History
 - [x] Guild History
-</details>
 
+</details>
 
 ### Guild
 <details>
 <summary>Click Here.</summary>
 <br>
+
 - [ ] Basic Data 
 - [ ] Top Characters
 - [ ] Top Pets
@@ -48,24 +50,29 @@ The following represents my plans for this project.
 - [ ] Fame History
 - [ ] Former Members
 - [ ] Server Activity
+
 </details>
 
 ### Offers
 <details>
 <summary>Click Here.</summary>
 <br>
+
 - [ ] Mapping Items to IDs
 - [ ] Sell Offers
 - [ ] Buy Offers
 - [ ] Recent Offers
+
 </details>
 
 ### Shops 
 <details>
 <summary>Click Here.</summary>
 <br>
+
 - [ ] Mystery Box
 - [ ] Nexus Items
+
 </details>
 
 ### License

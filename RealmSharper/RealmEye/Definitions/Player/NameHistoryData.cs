@@ -2,7 +2,7 @@
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
-	public class NameHistoryData : RealmEyeResponse
+	public class NameHistoryData : RealmEyePlayerResponse
 	{
 		public IList<NameHistoryEntry> NameHistory { get; set; }
 	}

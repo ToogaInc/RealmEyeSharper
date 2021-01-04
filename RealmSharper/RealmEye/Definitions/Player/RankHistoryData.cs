@@ -2,7 +2,7 @@
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
-	public class RankHistoryData : RealmEyeResponse
+	public class RankHistoryData : RealmEyePlayerResponse
 	{
 		public IList<RankHistoryEntry> RankHistory { get; set; }
 	}

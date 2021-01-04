@@ -2,7 +2,7 @@
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
-	public class GraveyardData : RealmEyeResponse
+	public class GraveyardData : RealmEyePlayerResponse
 	{
 		public int GraveyardCount { get; set; }
 		public IList<GraveyardEntry> Graveyard { get; set; }

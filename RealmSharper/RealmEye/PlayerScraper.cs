@@ -7,6 +7,7 @@ using RealmSharper.RealmEye.Definitions;
 using RealmSharper.RealmEye.Definitions.Player;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
+using static RealmSharper.RealmEye.Constants; 
 
 namespace RealmSharper.RealmEye
 {
@@ -14,25 +15,16 @@ namespace RealmSharper.RealmEye
 	{
 		#region RealmEye Player URLs
 
-		internal const string RealmEyeBaseUrl = "https://www.realmeye.com";
-		internal const string PlayerSegment = "player";
-		internal const string ExaltationSegment = "exaltations-of";
-		internal const string PetYardSegment = "pets-of";
-		internal const string GraveyardSegment = "graveyard-of-player";
-		internal const string GraveyardSummarySegment = "graveyard-summary-of-player";
-		internal const string FameHistorySegment = "fame-history-of-player";
-		internal const string RankHistorySegment = "rank-history-of-player";
-		internal const string NameHistorySegment = "name-history-of-player";
-		internal const string GuildHistorySegment = "guild-history-of-player";
+		private const string PlayerSegment = "player";
+		private const string ExaltationSegment = "exaltations-of";
+		private const string PetYardSegment = "pets-of";
+		private const string GraveyardSegment = "graveyard-of-player";
+		private const string GraveyardSummarySegment = "graveyard-summary-of-player";
+		private const string RankHistorySegment = "rank-history-of-player";
+		private const string NameHistorySegment = "name-history-of-player";
+		private const string GuildHistorySegment = "guild-history-of-player";
 
 		#endregion
-
-		internal static ScrapingBrowser Browser = new ScrapingBrowser
-		{
-			AllowAutoRedirect = true,
-			AllowMetaRedirect = true,
-			UserAgent = new FakeUserAgent("RealmSharper", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
-		};
 
 		/// <summary>
 		/// Whether the profile is private or not.

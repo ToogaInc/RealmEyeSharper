@@ -2,7 +2,7 @@
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
-	public class PetYardData : RealmEyeResponse
+	public class PetYardData : RealmEyePlayerResponse
 	{
 		public IList<PetEntry> Pets { get; set; }
 	}

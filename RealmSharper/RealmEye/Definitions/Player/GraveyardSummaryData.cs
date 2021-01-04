@@ -2,7 +2,7 @@
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
-	public class GraveyardSummaryData : RealmEyeResponse
+	public class GraveyardSummaryData : RealmEyePlayerResponse
 	{
 		public IList<GraveyardSummaryProperty> Properties { get; set; }
 		public IList<GraveyardTechnicalProperty> TechnicalProperties { get; set; }

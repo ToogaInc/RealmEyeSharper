@@ -2,7 +2,7 @@
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
-	public class ExaltationData : RealmEyeResponse
+	public class ExaltationData : RealmEyePlayerResponse
 	{
 		public IList<ExaltationEntry> Exaltations { get; set; }
 	}

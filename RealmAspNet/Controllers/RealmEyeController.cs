@@ -8,7 +8,7 @@ using RealmSharper.RealmEye.Definitions;
 
 namespace RealmAspNet.Controllers
 {
-	[Route("api/realmeye")]
+	[Route("api/realmeye/player")]
 	[ApiController]
 	public class RealmEyeController : ControllerBase
 	{
@@ -63,8 +63,8 @@ namespace RealmAspNet.Controllers
 		/// <param name="task">The task to perform.</param>
 		/// <param name="methodName">The name of the method.</param>
 		/// <returns>The response.</returns>
-		private async Task<RealmEyeResponse> GetRealmSharperResponse<T>(Task<T> task, string methodName) 
-			where T : notnull, RealmEyeResponse
+		private async Task<RealmEyePlayerResponse> GetRealmSharperResponse<T>(Task<T> task, string methodName) 
+			where T : notnull, RealmEyePlayerResponse
 		{
 			var sw = new Stopwatch();
 			T data = null;
@@ -78,7 +78,7 @@ namespace RealmAspNet.Controllers
 				_logger.Log(LogLevel.Information, $"[{methodName}] Scraped Data for {data.Name} in {sw.Elapsed.Milliseconds} MS.");
 
 				return data.ProfileIsPrivate
-					? RealmEyeResponse.GenerateGenericResponse(data)
+					? RealmEyePlayerResponse.GenerateGenericResponse(data)
 					: data;
 			}
 			catch (Exception e)
@@ -86,7 +86,7 @@ namespace RealmAspNet.Controllers
 				sw.Stop();
 				_logger.Log(LogLevel.Error, e, $"[{methodName}] Error Occurred When Getting Profile Data. Name: {data?.Name ?? "N/A"}");
 
-				return RealmEyeResponse.GenerateGenericResponse();
+				return RealmEyePlayerResponse.GenerateGenericResponse();
 			}
 		}
 	}

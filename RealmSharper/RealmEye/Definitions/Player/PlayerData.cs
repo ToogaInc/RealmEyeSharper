@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RealmSharper.RealmEye.Definitions.Player
 {
-	public class PlayerData : RealmEyeResponse
+	public class PlayerData : RealmEyePlayerResponse
 	{
 		public int CharacterCount { get; set; }
 		public int Skins { get; set; }

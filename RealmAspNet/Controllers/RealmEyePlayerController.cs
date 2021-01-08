@@ -10,18 +10,17 @@ namespace RealmAspNet.Controllers
 {
 	[Route("api/realmeye/player")]
 	[ApiController]
-	public class RealmEyeController : ControllerBase
+	public class RealmEyePlayerController : ControllerBase
 	{
-		private readonly ILogger<RealmEyeController> _logger;
+		private readonly ILogger<RealmEyePlayerController> _logger;
 
 		/// <summary>
 		/// Creates a new controller for this API.
 		/// </summary>
 		/// <param name="logger">The logging object.</param>
-		public RealmEyeController(ILogger<RealmEyeController> logger)
-		{
-			_logger = logger;
-		}
+		public RealmEyePlayerController(ILogger<RealmEyePlayerController> logger)
+			=> _logger = logger;
+
 
 		[HttpGet("basics/{name}")]
 		public async Task<RealmEyeResponse> GetBasicDataAsync(string name)
@@ -38,7 +37,8 @@ namespace RealmAspNet.Controllers
 
 		[HttpGet("graveyardsummary/{name}")]
 		public async Task<RealmEyeResponse> GetGraveyardSummaryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardSummaryAsync(name), "GetGraveyardSummaryAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardSummaryAsync(name),
+				"GetGraveyardSummaryAsync");
 
 		[HttpGet("namehistory/{name}")]
 		public async Task<RealmEyeResponse> GetNameHistoryAsync(string name)
@@ -63,7 +63,7 @@ namespace RealmAspNet.Controllers
 		/// <param name="task">The task to perform.</param>
 		/// <param name="methodName">The name of the method.</param>
 		/// <returns>The response.</returns>
-		private async Task<RealmEyePlayerResponse> GetRealmSharperResponse<T>(Task<T> task, string methodName) 
+		private async Task<RealmEyePlayerResponse> GetRealmSharperResponse<T>(Task<T> task, string methodName)
 			where T : notnull, RealmEyePlayerResponse
 		{
 			var sw = new Stopwatch();
@@ -75,7 +75,8 @@ namespace RealmAspNet.Controllers
 				data = await task;
 				sw.Stop();
 
-				_logger.Log(LogLevel.Information, $"[{methodName}] Scraped Data for {data.Name} in {sw.Elapsed.Milliseconds} MS.");
+				_logger.Log(LogLevel.Information,
+					$"[{methodName}] Scraped Data for {data.Name} in {sw.Elapsed.Milliseconds} MS.");
 
 				return data.ProfileIsPrivate
 					? RealmEyePlayerResponse.GenerateGenericResponse(data)
@@ -84,7 +85,8 @@ namespace RealmAspNet.Controllers
 			catch (Exception e)
 			{
 				sw.Stop();
-				_logger.Log(LogLevel.Error, e, $"[{methodName}] Error Occurred When Getting Profile Data. Name: {data?.Name ?? "N/A"}");
+				_logger.Log(LogLevel.Error, e,
+					$"[{methodName}] Error Occurred When Getting Profile Data. Name: {data?.Name ?? "N/A"}");
 
 				return RealmEyePlayerResponse.GenerateGenericResponse();
 			}

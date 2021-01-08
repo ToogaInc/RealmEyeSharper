@@ -1,4 +1,6 @@
-﻿using ScrapySharp.Network;
+﻿using System.Net.Http;
+using System.Net.Http.Headers;
+using ScrapySharp.Network;
 
 namespace RealmSharper.RealmEye
 {
@@ -10,7 +12,15 @@ namespace RealmSharper.RealmEye
 			AllowMetaRedirect = true,
 			UserAgent = new FakeUserAgent("RealmSharper", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
 		};
-		
+
+		public static readonly HttpClient Client; 
+
 		public const string RealmEyeBaseUrl = "https://www.realmeye.com";
+
+		static Constants()
+		{
+			Client = new HttpClient();
+			Client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36");
+		}
 	}
 }

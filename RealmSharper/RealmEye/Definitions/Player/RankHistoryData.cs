@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace RealmSharper.RealmEye.Definitions.Player
+namespace RealmSharper.RealmEye.Definitions
 {
 	public class RankHistoryData : RealmEyePlayerResponse
 	{

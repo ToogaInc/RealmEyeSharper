@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace RealmSharper.RealmEye.Definitions.Player
+namespace RealmSharper.RealmEye.Definitions
 {
 	public class PlayerData : RealmEyePlayerResponse
 	{

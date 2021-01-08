@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using RealmSharper.RealmEye.Definitions;
-using RealmSharper.RealmEye.Definitions.Player;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
 using static RealmSharper.RealmEye.Constants; 

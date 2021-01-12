@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <LangVersion>8.0</LangVersion>
+    <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>9</LangVersion>
     <Authors>Edward Wang</Authors>
     <Description>A library that can scrape various parts of a person's RealmEye profile. This also includes a /who parser and other useful features.</Description>
     <Copyright>Edward Wang</Copyright>

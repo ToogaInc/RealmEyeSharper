@@ -21,7 +21,7 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public struct CharacterEntry
 	{
-		public int ActivePetId { get; set; }
+		public string Pet { get; set; }
 		public string CharacterType { get; set; }
 		public int Level { get; set; }
 		public int ClassQuestsCompleted { get; set; }

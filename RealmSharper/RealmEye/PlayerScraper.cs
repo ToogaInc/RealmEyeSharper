@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using RealmSharper.RealmEye.Definitions;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
-using static RealmSharper.RealmEye.Constants; 
+using static RealmSharper.RealmEye.Constants;
 
 namespace RealmSharper.RealmEye
 {
@@ -33,7 +33,7 @@ namespace RealmSharper.RealmEye
 		private static bool IsPrivate(WebPage page)
 		{
 			var mainElement = page.Html.CssSelect(".col-md-12");
-			return mainElement.CssSelect(".player-not-found").Count() != 0;
+			return mainElement.CssSelect(".player-not-found").Any();
 		}
 
 		/// <summary>
@@ -150,8 +150,8 @@ namespace RealmSharper.RealmEye
 				// pet: column 1
 				var petIdRaw = characterRow.SelectSingleNode("td[1]").FirstChild;
 				var petId = petIdRaw == null
-					? -1
-					: int.Parse(petIdRaw.Attributes["data-item"].Value);
+					? string.Empty
+					: petIdRaw.Attributes["data-item"].Value;
 
 				// character display: column 2
 				// character class type: column 3
@@ -247,7 +247,11 @@ namespace RealmSharper.RealmEye
 
 				returnData.Characters.Add(new CharacterEntry
 				{
-					ActivePetId = petId,
+					Pet = petId == string.Empty
+						? string.Empty
+						: IdToItem.TryGetValue(petId, out var a)
+							? a
+							: $"PET_ID: {petId}",
 					CharacterType = characterType,
 					ClassQuestsCompleted = cqc,
 					EquipmentData = characterEquipment.ToArray(),

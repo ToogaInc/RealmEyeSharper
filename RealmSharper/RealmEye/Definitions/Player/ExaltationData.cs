@@ -9,20 +9,20 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public struct ExaltationEntry
 	{
-		public string Class { get; set; }
-		public int ExaltationAmount { get; set; }
-		public Stats ExaltationStats { get; set; }
+		public string Class { get; init; }
+		public int ExaltationAmount { get; init; }
+		public Stats ExaltationStats { get; init; }
 	}
 
 	public struct Stats
 	{
-		public int Health { get; set; }
-		public int Magic { get; set; }
-		public int Attack { get; set; }
-		public int Defense { get; set; }
-		public int Speed { get; set; }
-		public int Vitality { get; set; }
-		public int Wisdom { get; set; }
-		public int Dexterity { get; set; }
+		public int Health { get; init; }
+		public int Magic { get; init; }
+		public int Attack { get; init; }
+		public int Defense { get; init; }
+		public int Speed { get; init; }
+		public int Vitality { get; init; }
+		public int Wisdom { get; init; }
+		public int Dexterity { get; init; }
 	}
 }

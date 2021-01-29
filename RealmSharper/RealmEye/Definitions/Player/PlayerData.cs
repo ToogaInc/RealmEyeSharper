@@ -21,16 +21,16 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public struct CharacterEntry
 	{
-		public string Pet { get; set; }
-		public string CharacterType { get; set; }
-		public int Level { get; set; }
-		public int ClassQuestsCompleted { get; set; }
-		public int Fame { get; set; }
-		public long Experience { get; set; }
-		public int Place { get; set; }
-		public string[] EquipmentData { get; set; }
-		public bool HasBackpack { get; set; }
-		public IDictionary<string, int> Stats { get; set; }
-		public int StatsMaxed { get; set; }
+		public string Pet { get; init; }
+		public string CharacterType { get; init; }
+		public int Level { get; init; }
+		public int ClassQuestsCompleted { get; init; }
+		public int Fame { get; init; }
+		public long Experience { get; init; }
+		public int Place { get; init; }
+		public string[] EquipmentData { get; init; }
+		public bool HasBackpack { get; init; }
+		public IDictionary<string, int> Stats { get; init; }
+		public int StatsMaxed { get; init; }
 	}
 }

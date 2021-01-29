@@ -9,8 +9,8 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public class NameHistoryEntry
 	{
-		public string Name { get; set; }
-		public string From { get; set; }
-		public string To { get; set; }
+		public string Name { get; init; }
+		public string From { get; init; }
+		public string To { get; init; }
 	}
 }

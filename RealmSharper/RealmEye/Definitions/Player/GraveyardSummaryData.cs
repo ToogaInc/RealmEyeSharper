@@ -11,27 +11,27 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public struct MaxedStatsByCharacters
 	{
-		public string CharacterType { get; set; }
+		public string CharacterType { get; init; }
 		// Stats[0] = 0/8; Stats[8] = 8/8
-		public int[] Stats { get; set; }
-		public int Total { get; set; }
+		public int[] Stats { get; init; }
+		public int Total { get; init; }
 	}
 
 	public struct GraveyardSummaryProperty
 	{
-		public string Achievement { get; set; }
-		public long Total { get; set; }
-		public long Max { get; set; }
-		public double Average { get; set; }
-		public long Min { get; set; }
+		public string Achievement { get; init; }
+		public long Total { get; init; }
+		public long Max { get; init; }
+		public double Average { get; init; }
+		public long Min { get; init; }
 	}
 
 	public struct GraveyardTechnicalProperty
 	{
-		public string Achievement { get; set; }
-		public string Total { get; set; }
-		public string Max { get; set; }
-		public string Average { get; set; }
-		public string Min { get; set; }
+		public string Achievement { get; init; }
+		public string Total { get; init; }
+		public string Max { get; init; }
+		public string Average { get; init; }
+		public string Min { get; init; }
 	}
 }

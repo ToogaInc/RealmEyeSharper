@@ -9,9 +9,9 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public struct GuildHistoryEntry
 	{
-		public string GuildName { get; set; }
-		public string GuildRank { get; set; }
-		public string From { get; set; }
-		public string To { get; set; }
+		public string GuildName { get; init; }
+		public string GuildRank { get; init; }
+		public string From { get; init; }
+		public string To { get; init; }
 	}
 }

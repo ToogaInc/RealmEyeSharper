@@ -10,15 +10,15 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public struct GraveyardEntry
 	{
-		public string DiedOn { get; set; }
-		public string Character { get; set; }
-		public int Level { get; set; }
-		public int BaseFame { get; set; }
-		public int TotalFame { get; set; }
-		public long Experience { get; set; }
-		public string[] Equipment { get; set; }
-		public int MaxedStats { get; set; }
-		public string KilledBy { get; set; }
-		public bool HadBackpack { get; set; }
+		public string DiedOn { get; init; }
+		public string Character { get; init; }
+		public int Level { get; init; }
+		public int BaseFame { get; init; }
+		public int TotalFame { get; init; }
+		public long Experience { get; init; }
+		public string[] Equipment { get; init; }
+		public int MaxedStats { get; init; }
+		public string KilledBy { get; init; }
+		public bool HadBackpack { get; init; }
 	}
 }

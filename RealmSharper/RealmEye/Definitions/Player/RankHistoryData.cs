@@ -9,8 +9,8 @@ namespace RealmSharper.RealmEye.Definitions
 
 	public struct RankHistoryEntry
 	{
-		public int Rank { get; set; }
-		public string Achieved { get; set; }
-		public string Date { get; set; }
+		public int Rank { get; init; }
+		public string Achieved { get; init; }
+		public string Date { get; init; }
 	}
 }

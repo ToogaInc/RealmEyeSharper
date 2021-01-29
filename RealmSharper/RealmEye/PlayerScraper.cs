@@ -392,7 +392,9 @@ namespace RealmSharper.RealmEye
 
 				returnData.Pets.Add(new PetEntry
 				{
-					ActivePetId = petId,
+					PetSkinName = IdToItem.TryGetValue($"{petId}", out name)
+						? name
+						: $"PET_ID: {petId}",
 					Family = family,
 					MaxLevel = maxLevel,
 					Name = petName,

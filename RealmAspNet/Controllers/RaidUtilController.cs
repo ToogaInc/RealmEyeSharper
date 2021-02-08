@@ -2,13 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 using Colourful;
 using Microsoft.Extensions.Logging;
-using RealmAspNet.Models;
 using Tesseract;
 using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
@@ -29,19 +28,20 @@ namespace RealmAspNet.Controllers
 		public RaidUtilController(ILogger<RaidUtilController> logger)
 		{
 			_logger = logger;
-			_tesseractEngine = new TesseractEngine("./tessdata", "eng");
+			_tesseractEngine = new TesseractEngine("./tessdata", "eng", EngineMode.Default);
 			_client = new HttpClient();
 		}
 
-		[HttpGet("parsewho")]
-		public async Task<string[]> ParseWhoScreenshot([FromBody] ParseWhoModel model)
+		[HttpGet("parsewho/{url}")]
+		public async Task<string[]> ParseWhoScreenshot(string url)
 		{
-			var uri = Uri.TryCreate(model.Url, UriKind.Absolute, out var uriRes)
+			url = HttpUtility.UrlDecode(url);
+			_logger.LogInformation($"ParseWho Executed. URL: {url}");
+			var uri = Uri.TryCreate(url, UriKind.Absolute, out var uriRes)
 			          && (uriRes.Scheme == Uri.UriSchemeHttp || uriRes.Scheme == Uri.UriSchemeHttps)
 				? uriRes
 				: null;
 
-			_logger.LogInformation($"ParseWho Executed. URL: {model.Url}");
 			if (uri == null)
 				return Array.Empty<string>();
 
@@ -79,10 +79,8 @@ namespace RealmAspNet.Controllers
 					image.SetPixel(x, y, deltaE < 15 ? Color.Black : Color.White);
 				}
 			}
-
-			await using var anotherStream = new MemoryStream();
-			image.Save(anotherStream, ImageFormat.Png);
-			using var page = _tesseractEngine.Process(Pix.LoadFromMemory(anotherStream.ToArray()));
+			
+			using var page = _tesseractEngine.Process(image);
 			var textArr = page.GetText().Split("\n")
 				.Select(x => x.Trim())
 				.ToArray();

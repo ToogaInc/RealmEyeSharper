@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using System.Web;
 using RealmSharper.RealmEye.Definitions;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
@@ -117,7 +118,7 @@ namespace RealmSharper.RealmEye
 			{
 				var possDesc = page.Html.SelectNodes($"//div[contains(@class, 'line{i}')]");
 				if (possDesc != null && possDesc.Count != 0 && possDesc[0].InnerText.Length != 0)
-					finalDesc.Add(possDesc[0].InnerText);
+					finalDesc.Add(HttpUtility.HtmlDecode(possDesc[0].InnerText));
 			}
 
 			returnData.Description = finalDesc.ToArray();

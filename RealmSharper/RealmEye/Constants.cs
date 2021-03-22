@@ -9,7 +9,7 @@ namespace RealmSharper.RealmEye
 {
 	internal static class Constants
 	{
-		public static readonly ScrapingBrowser Browser = new ScrapingBrowser
+		public static readonly ScrapingBrowser Browser = new()
 		{
 			AllowAutoRedirect = true,
 			AllowMetaRedirect = true,

@@ -540,7 +540,7 @@ namespace RealmSharper.RealmEye
 						Equipment = characterEquipment.ToArray(),
 						Experience = exp,
 						HadBackpack = hadBackpack,
-						KilledBy = diedTo,
+						KilledBy = HttpUtility.HtmlDecode(diedTo),
 						Level = level,
 						MaxedStats = statsMaxed,
 						TotalFame = totalFame
@@ -615,7 +615,7 @@ namespace RealmSharper.RealmEye
 			// td[6] => min
 			var props = firstSummaryTable.Select(row => new GraveyardSummaryProperty
 			{
-				Achievement = row.SelectSingleNode("td[2]").InnerText,
+				Achievement = HttpUtility.HtmlDecode(row.SelectSingleNode("td[2]").InnerText),
 				Total = long.Parse(row.SelectSingleNode("td[3]").InnerText),
 				Max = long.Parse(row.SelectSingleNode("td[4]").InnerText),
 				Average = double.Parse(row.SelectSingleNode("td[5]").InnerText),
@@ -632,7 +632,7 @@ namespace RealmSharper.RealmEye
 			// td[5] => min
 			var techProps = secondSummaryTable.Select(row => new GraveyardTechnicalProperty
 			{
-				Achievement = row.SelectSingleNode("td[1]").InnerText,
+				Achievement = HttpUtility.HtmlDecode(row.SelectSingleNode("td[1]").InnerText),
 				Total = row.SelectSingleNode("td[2]").InnerText,
 				Max = row.SelectSingleNode("td[3]").InnerText,
 				Average = row.SelectSingleNode("td[4]").InnerText,

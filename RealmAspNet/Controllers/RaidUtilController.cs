@@ -9,7 +9,6 @@ using System.Web;
 using Colourful;
 using Microsoft.Extensions.Logging;
 using Tesseract;
-using ImageFormat = System.Drawing.Imaging.ImageFormat;
 
 namespace RealmAspNet.Controllers
 {

@@ -146,25 +146,37 @@ namespace RealmSharper.RealmEye
 			if (charTable == null)
 				return returnData;
 
+			var tableOffset = 0;
 			foreach (var characterRow in charTable)
 			{
 				// pet: column 1
+				// Here, we need to explicitly check and make sure the pet column does exist.
 				var petIdRaw = characterRow.SelectSingleNode("td[1]").FirstChild;
-				var petId = petIdRaw == null
-					? string.Empty
-					: petIdRaw.Attributes["data-item"].Value;
+				var petId = string.Empty;
+				if (petIdRaw is not null && tableOffset != 1)
+				{
+					var attr = petIdRaw.GetAttributeValue("data-item", null);
+					// If this is null, then this means that we must offset by one since the first column is the
+					// character display. Then, it follows that there is NOT a pet column and we no longer need to
+					// worry about pets.
+					if (attr is null)
+						tableOffset = 1;
+					else
+						petId = attr;
+				}
 
 				// character display: column 2
 				// character class type: column 3
-				var characterType = characterRow.SelectSingleNode("td[3]").InnerText;
+				var characterType = characterRow.SelectSingleNode($"td[{3 - tableOffset}]").InnerText;
 
 				// level of character
-				var level = int.TryParse(characterRow.SelectSingleNode("td[4]").InnerText, out var lvl)
+				var level = int.TryParse(characterRow.SelectSingleNode($"td[{4 - tableOffset}]").InnerText, 
+					out var lvl)
 					? lvl
 					: -1;
 
 				// class quests completed
-				var cqcNode = characterRow.SelectSingleNode("td[5]");
+				var cqcNode = characterRow.SelectSingleNode($"td[{5 - tableOffset}]");
 				var cqc = cqcNode.InnerText != null && cqcNode.InnerText.Contains('/')
 					? int.TryParse(cqcNode.InnerText.Split('/')[0], out var c)
 						? c
@@ -172,24 +184,27 @@ namespace RealmSharper.RealmEye
 					: -1;
 
 				// alive fame
-				var fame = int.TryParse(characterRow.SelectSingleNode("td[6]").InnerText, out var f)
+				var fame = int.TryParse(characterRow.SelectSingleNode($"td[{6 - tableOffset}]").InnerText, 
+					out var f)
 					? f
 					: -1;
 
 				// alive exp
-				var exp = long.TryParse(characterRow.SelectSingleNode("td[7]").InnerText, out var e)
+				var exp = long.TryParse(characterRow.SelectSingleNode($"td[{7 - tableOffset}]").InnerText, 
+					out var e)
 					? e
 					: -1;
 
 				// rank
-				var place = int.TryParse(characterRow.SelectSingleNode("td[8]").InnerText, out var p)
+				var place = int.TryParse(characterRow.SelectSingleNode($"td[{8 - tableOffset}]").InnerText, 
+					out var p)
 					? p
 					: -1;
 
 				// equipment
 				var characterEquipment = new List<string>();
 				var equips = characterRow
-					.SelectSingleNode("td[9]")
+					.SelectSingleNode($"td[{9 - tableOffset}]")
 					// <span class="item-wrapper">...
 					.ChildNodes;
 				for (var i = 0; i < 4; i++)
@@ -204,7 +219,7 @@ namespace RealmSharper.RealmEye
 				// player stats 
 				// <span class = "player-stats" ...
 				var stats = characterRow
-					.SelectSingleNode("td[10]");
+					.SelectSingleNode($"td[{10 - tableOffset}]");
 
 				var maxedStats = stats.InnerText != null && stats.InnerText.Contains('/')
 					? int.TryParse(stats.InnerText.Split('/')[0], out var ms)
@@ -859,7 +874,7 @@ namespace RealmSharper.RealmEye
 			{
 				returnData.GuildHistory.Add(new GuildHistoryEntry
 				{
-					GuildName = guildHistoryRow.SelectSingleNode("td[1]").FirstChild.InnerText,
+					GuildName = WebUtility.HtmlDecode(guildHistoryRow.SelectSingleNode("td[1]").FirstChild.InnerText),
 					GuildRank = guildHistoryRow.SelectSingleNode("td[2]").InnerText,
 					From = guildHistoryRow.SelectSingleNode("td[3]").InnerText,
 					To = guildHistoryRow.SelectSingleNode("td[4]").InnerText

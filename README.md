@@ -6,7 +6,7 @@ RealmAspNet is an ASP.NET API application that utilizes RealmSharper. Additional
 If demand arises, I will make RealmSharper into its own library.
 
 ## Built With
-- .NET Core 3.1
+- .NET 5.0
 - ASP.NET Core 
 
 ## Getting Started
@@ -16,7 +16,7 @@ Coming Soon.
 Coming Soon. 
 
 ## Roadmap
-The following represents my plans for this project. 
+The following represents my plans for this project.
 
 ### Player
 <details>

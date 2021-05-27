@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using HtmlAgilityPack;
 using RealmSharper.RealmEye.Definitions;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
@@ -170,7 +173,7 @@ namespace RealmSharper.RealmEye
 				var characterType = characterRow.SelectSingleNode($"td[{3 - tableOffset}]").InnerText;
 
 				// level of character
-				var level = int.TryParse(characterRow.SelectSingleNode($"td[{4 - tableOffset}]").InnerText, 
+				var level = int.TryParse(characterRow.SelectSingleNode($"td[{4 - tableOffset}]").InnerText,
 					out var lvl)
 					? lvl
 					: -1;
@@ -184,19 +187,19 @@ namespace RealmSharper.RealmEye
 					: -1;
 
 				// alive fame
-				var fame = int.TryParse(characterRow.SelectSingleNode($"td[{6 - tableOffset}]").InnerText, 
+				var fame = int.TryParse(characterRow.SelectSingleNode($"td[{6 - tableOffset}]").InnerText,
 					out var f)
 					? f
 					: -1;
 
 				// alive exp
-				var exp = long.TryParse(characterRow.SelectSingleNode($"td[{7 - tableOffset}]").InnerText, 
+				var exp = long.TryParse(characterRow.SelectSingleNode($"td[{7 - tableOffset}]").InnerText,
 					out var e)
 					? e
 					: -1;
 
 				// rank
-				var place = int.TryParse(characterRow.SelectSingleNode($"td[{8 - tableOffset}]").InnerText, 
+				var place = int.TryParse(characterRow.SelectSingleNode($"td[{8 - tableOffset}]").InnerText,
 					out var p)
 					? p
 					: -1;
@@ -760,6 +763,117 @@ namespace RealmSharper.RealmEye
 					From = nameHistoryEntry.SelectSingleNode("td[2]").InnerText,
 					To = nameHistoryEntry.SelectSingleNode("td[3]").InnerText
 				});
+			}
+
+			return returnData;
+		}
+
+
+		private static readonly Regex SquareBracketRegex = new(@"\[(.*?)\]", RegexOptions.Compiled);
+
+		public static async Task<FameHistoryData> ScrapeFameHistoryAsync(string name)
+		{
+			var page = await Browser
+				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}"));
+
+			if (page == null)
+				return new FameHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
+
+			if (IsPrivate(page))
+				return new FameHistoryData {ResultCode = ResultCode.NotFound, Name = name};
+
+			var returnData = new FameHistoryData
+			{
+				ProfileIsPrivate = false,
+				ResultCode = ResultCode.Success,
+				Name = name
+			};
+
+			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
+			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Fame history is hidden"))
+				return returnData;
+
+			returnData.SectionIsPrivate = false;
+			var fameNode = page.Html
+				.Descendants("script")
+				.FirstOrDefault(x => x.InnerText.Contains("initializeSearch")
+				                     && x.InnerText.Contains("initializeGraphs"));
+
+			if (fameNode is null)
+				return returnData;
+			
+			var arraysStr = fameNode.InnerText
+				.Split("initializeGraphs(")[1]
+				.Split(", \"")[0];
+
+			// https://stackoverflow.com/questions/740642/c-sharp-regex-split-everything-inside-square-brackets
+			// For regex 
+			// Count of 1 = only daily
+			// Count of 2 = daily + weekly
+			// Count of 3 = all graphs
+			var count = Regex.Matches(arraysStr, "]]").Count;
+			Debug.WriteLine(count);
+			var unparsedArr = arraysStr.Split("]]", StringSplitOptions.RemoveEmptyEntries);
+
+			var dateTime = DateTime.Now;
+			var offset = 0;
+			// All graphs
+			if (count >= 3)
+			{
+				var allGraphsArr = unparsedArr[^1] + "]";
+				allGraphsArr = allGraphsArr.Replace(", [[", "[");
+				var res = SquareBracketRegex.Match(allGraphsArr);
+				while (res.Success)
+				{
+					var timeFame = res.Groups[1].Value
+						.Split(",")
+						.Select(x => long.Parse(x.Trim()))
+						.ToArray();
+					var date = new DateTime(dateTime.Ticks - 1000 * timeFame[0]);
+					returnData.AllTime.Add(new TimeFame {Fame = timeFame[1], Time = date.Ticks});
+					res = res.NextMatch();
+				}
+
+				offset++;
+			}
+
+			// week
+			if (count >= 2)
+			{
+				var allGraphsArr = unparsedArr[^(1 + offset)] + "]";
+				allGraphsArr = allGraphsArr.Replace(", [[", "[");
+				var res = SquareBracketRegex.Match(allGraphsArr);
+				while (res.Success)
+				{
+					var timeFame = res.Groups[1].Value
+						.Split(",")
+						.Select(x => long.Parse(x.Trim()))
+						.ToArray();
+					var date = new DateTime(dateTime.Ticks - 1000 * timeFame[0]);
+					returnData.Week.Add(new TimeFame { Fame = timeFame[1], Time = date.Ticks });
+					res = res.NextMatch();
+				}
+
+				offset++;
+			}
+
+			// day
+			if (count >= 1)
+			{
+				var allGraphsArr = "[" + unparsedArr[^(1 + offset)]
+					.Split("initializeGraphs([[")[1] + "]";
+				var res = SquareBracketRegex.Match(allGraphsArr);
+				while (res.Success)
+				{
+					var timeFame = res.Groups[1].Value
+						.Split(",")
+						.Select(x => long.Parse(x.Trim()))
+						.ToArray();
+					var date = new DateTime(dateTime.Ticks - 1000 * timeFame[0]);
+					returnData.Hour.Add(new TimeFame { Fame = timeFame[1], Time = date.Ticks });
+					res = res.NextMatch();
+				}
 			}
 
 			return returnData;

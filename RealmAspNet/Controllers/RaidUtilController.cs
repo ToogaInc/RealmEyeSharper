@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Web;
 using Colourful;
 using Microsoft.Extensions.Logging;
+using RealmAspNet.Models;
 using Tesseract;
 
 namespace RealmAspNet.Controllers
@@ -31,10 +32,15 @@ namespace RealmAspNet.Controllers
 			_client = new HttpClient();
 		}
 
-		[HttpGet("parsewho/{url}")]
-		public async Task<string[]> ParseWhoScreenshot(string url)
+		public struct ParseBody
 		{
-			url = HttpUtility.UrlDecode(url);
+			public string Url { get; set; }
+		}
+		
+		[HttpGet("parsewho")]
+		public async Task<string[]> ParseWhoScreenshot([FromBody] ParseWhoModel model)
+		{
+			var url = HttpUtility.UrlDecode(model.Url);
 			_logger.LogInformation($"ParseWho Executed. URL: {url}");
 			var uri = Uri.TryCreate(url, UriKind.Absolute, out var uriRes)
 			          && (uriRes.Scheme == Uri.UriSchemeHttp || uriRes.Scheme == Uri.UriSchemeHttps)

@@ -56,6 +56,10 @@ namespace RealmAspNet.Controllers
 		public async Task<RealmEyeResponse> GetExaltationsAsync(string name)
 			=> await GetRealmSharperResponse(PlayerScraper.ScrapeExaltationsAsync(name), "GetExaltationsAsync");
 
+		[HttpGet("famehistory/{name}")]
+		public async Task<RealmEyeResponse> GetFameHistoryAsync(string name)
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapeFameHistoryAsync(name), "GetFameHistoryAsync");
+
 		/// <summary>
 		/// Gets a response from the RealmSharper library.
 		/// </summary>

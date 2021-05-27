@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -84,6 +85,10 @@ namespace RealmAspNet.Controllers
 					image.SetPixel(x, y, deltaE < 15 ? Color.Black : Color.White);
 				}
 			}
+
+#if DEBUG
+			image.Save(Path.Join(AppDomain.CurrentDomain.BaseDirectory, "test.png"));
+#endif
 			
 			using var page = _tesseractEngine.Process(image);
 			var textArr = page.GetText().Split("\n")

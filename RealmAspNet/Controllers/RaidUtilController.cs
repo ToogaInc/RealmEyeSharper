@@ -1,14 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using Colourful;
 using Microsoft.Extensions.Logging;
+using RealmAspNet.Definitions;
 using RealmAspNet.Models;
 using Tesseract;
 
@@ -20,7 +23,7 @@ namespace RealmAspNet.Controllers
 	{
 		private readonly ILogger<RaidUtilController> _logger;
 		private readonly TesseractEngine _tesseractEngine;
-		private readonly HttpClient _client; 
+		private readonly HttpClient _client;
 
 		/// <summary>
 		/// Creates a new controller for this API.
@@ -33,25 +36,42 @@ namespace RealmAspNet.Controllers
 			_client = new HttpClient();
 		}
 
-		public struct ParseBody
-		{
-			public string Url { get; set; }
-		}
-		
 		[HttpGet("parsewho")]
-		public async Task<string[]> ParseWhoScreenshot([FromBody] ParseWhoModel model)
+		public async Task<ParseWhoResult> ParseWhoScreenshot([FromBody] ParseWhoModel model)
 		{
 			var url = HttpUtility.UrlDecode(model.Url);
-			_logger.LogInformation($"ParseWho Executed. URL: {url}");
 			var uri = Uri.TryCreate(url, UriKind.Absolute, out var uriRes)
 			          && (uriRes.Scheme == Uri.UriSchemeHttp || uriRes.Scheme == Uri.UriSchemeHttps)
 				? uriRes
 				: null;
 
+			var logStr = new StringBuilder()
+				.Append($"[{DateTime.Now:G}] For URL Input: {url}");
+
+			var returnObj = new ParseWhoResult
+			{
+				Count = 0,
+				ImageDownloadTime = 0,
+				ImageProcessingTime = 0,
+				OcrRecognitionTime = 0,
+				RawOcrResult = string.Empty,
+				WhoResult = Array.Empty<string>(),
+				Issues = string.Empty,
+				Code = string.Empty
+			};
+
 			if (uri == null)
-				return Array.Empty<string>();
+			{
+				logStr.AppendLine().Append("\tUnable to parse URL.");
+				_logger.LogInformation(logStr.ToString());
+				returnObj.Issues = "The given URL could not be parsed.";
+				returnObj.Code = "FAILED:INVALID_URL";
+				return returnObj;
+			}
 
 			Bitmap image;
+			var sw = new Stopwatch();
+			sw.Start();
 
 			// get image
 			try
@@ -61,9 +81,17 @@ namespace RealmAspNet.Controllers
 			}
 			catch (Exception)
 			{
-				return Array.Empty<string>();
+				logStr.AppendLine().Append("\tURL points to invalid location.");
+				_logger.LogInformation(logStr.ToString());
+				returnObj.Issues = "The given URL pointed to an invalid location (404 error, perhaps).";
+				returnObj.Code = "FAILED:URL_INVALID_LOCATION";
+				return returnObj;
 			}
 
+			returnObj.ImageDownloadTime = sw.ElapsedMilliseconds;
+			logStr.AppendLine().Append($"\tImage Download Time: {returnObj.ImageDownloadTime} MS");
+
+			sw.Restart();
 
 			// this is a slight shade of yellow but divide each value by 255
 			var baseYellow = new RGBColor(0.8928976034858388, 0.9003921568627451, 0.04435729847494554);
@@ -86,11 +114,25 @@ namespace RealmAspNet.Controllers
 				}
 			}
 
+			sw.Stop();
+			returnObj.ImageProcessingTime = sw.ElapsedMilliseconds;
+
 #if DEBUG
 			image.Save(Path.Join(AppDomain.CurrentDomain.BaseDirectory, "test.png"));
 #endif
-			
+
+			sw.Restart();
 			using var page = _tesseractEngine.Process(image);
+			sw.Stop();
+
+			returnObj.OcrRecognitionTime = sw.ElapsedMilliseconds;
+			returnObj.RawOcrResult = page.GetText();
+
+			logStr.AppendLine().Append($"\tImage Processing Time: {returnObj.ImageProcessingTime} MS.")
+				.AppendLine().Append($"\tOCR Time: {returnObj.OcrRecognitionTime} MS.")
+				.AppendLine().Append($"\tRaw OCR Results: {returnObj.RawOcrResult.Replace("\n", " <NL> ")}");
+
+
 			var textArr = page.GetText().Split("\n")
 				.Select(x => x.Trim())
 				.ToArray();
@@ -99,14 +141,20 @@ namespace RealmAspNet.Controllers
 			for (var i = 0; i < textArr.Length; ++i)
 			{
 				if (!textArr[i].ToLower().StartsWith("players online")
-					|| !textArr[i].ToLower().Contains("):"))
+				    || !textArr[i].ToLower().Contains("):"))
 					continue;
 				index = i;
 				break;
 			}
 
 			if (index == -1)
-				return Array.Empty<string>();
+			{
+				logStr.AppendLine().Append("\tUnable to find \"player online\" or \"):\" in text.");
+				_logger.LogInformation(logStr.ToString());
+				returnObj.Issues = "Unable to find \"player online\" or \"):\" in text.";
+				returnObj.Code = "FAILED:NO_WHO_TEXT_FOUND";
+				return returnObj;
+			}
 
 			var nameArr = new HashSet<string>();
 			var firstLine = textArr[index].Split("):")[1].Trim();
@@ -122,7 +170,7 @@ namespace RealmAspNet.Controllers
 			for (var i = index + 1; i < textArr.Length; ++i)
 			{
 				if (string.IsNullOrEmpty(textArr[i])
-					|| !char.IsLetter(textArr[i][0]))
+				    || !char.IsLetter(textArr[i][0]))
 				{
 					++emptyLineSuccession;
 					continue;
@@ -148,7 +196,13 @@ namespace RealmAspNet.Controllers
 					nameArr.Add(name.Replace('0', 'O').Replace('1', 'I'));
 			}
 
-			return nameArr.ToArray();
+			returnObj.Count = nameArr.Count;
+			returnObj.WhoResult = nameArr.ToArray();
+			returnObj.Code = "SUCCESS";
+			logStr.AppendLine().Append($"\tParse Successful! {returnObj.Count} names parsed.")
+				.AppendLine().Append($"\tNames parsed: {string.Join(", ", returnObj.WhoResult)}");
+			_logger.LogInformation(logStr.ToString());
+			return returnObj;
 		}
 	}
 }

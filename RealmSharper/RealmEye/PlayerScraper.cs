@@ -771,6 +771,11 @@ namespace RealmSharper.RealmEye
 
 		private static readonly Regex SquareBracketRegex = new(@"\[(.*?)\]", RegexOptions.Compiled);
 
+		/// <summary>
+		/// <para>Returns the player's fame history. This is a WIP.</para>
+		/// </summary>
+		/// <param name="name">The name of the person to look up.</param>
+		/// <returns>The person's fame history.</returns>
 		public static async Task<FameHistoryData> ScrapeFameHistoryAsync(string name)
 		{
 			var page = await Browser

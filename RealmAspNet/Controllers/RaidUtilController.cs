@@ -87,7 +87,9 @@ namespace RealmAspNet.Controllers
 				returnObj.Code = "FAILED:URL_INVALID_LOCATION";
 				return returnObj;
 			}
-
+			
+			sw.Stop();
+			
 			returnObj.ImageDownloadTime = sw.ElapsedMilliseconds;
 			logStr.AppendLine().Append($"\tImage Download Time: {returnObj.ImageDownloadTime} MS");
 

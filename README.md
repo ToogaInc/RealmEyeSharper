@@ -1,4 +1,8 @@
-# RealmSharper & RealmAspNet
+# RealmEyeSharper
+An unofficial RealmEye API.
+
+## Formal Description
+
 An ASP.NET API Application that is designed to scrape RealmEye and provide some additional support for Realm of the Mad God (RotMG) Discord raiding bots and applications.
 
 The `RealmSharper` solution contains the actual scraper logic. That is, `RealmSharper` contains code that is designed to scrape various aspects of a user's RealmEye profile.
@@ -7,7 +11,7 @@ The `RealmAspNet` solution, as the name implies, is the ASP.NET Core application
 
 ## Built With
 - .NET 5.0
-- ASP.NET Core
+- ASP.NET
 
 ## Getting Started
 Coming Soon.

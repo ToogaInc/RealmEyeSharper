@@ -22,7 +22,8 @@
 		public string Name { get; init; }
 
 		/// <summary>
-		/// Creates a generic RealmEyeResponse object from the derived RealmEyeResponse object. Note that this should only be done if the derived object doesn't have any useful data (i.e. if the profile is private). 
+		/// Creates a generic RealmEyeResponse object from the derived RealmEyeResponse object. Note that this should
+		/// only be done if the derived object doesn't have any useful data (i.e. if the profile is private). 
 		/// </summary>
 		/// <param name="resp">The derived object.</param>
 		/// <returns>The RealmEyeResponse object.</returns>
@@ -32,6 +33,19 @@
 				ProfileIsPrivate = resp?.ProfileIsPrivate ?? true,
 				SectionIsPrivate = resp?.SectionIsPrivate ?? true,
 				ResultCode = resp?.ResultCode ?? ResultCode.InternalServerError
+			};
+		
+		/// <summary>
+		/// Creates a generic RealmEyeResponse object given the status code. This sets everything else to true.
+		/// </summary>
+		/// <param name="statusCode">The status code object.</param>
+		/// <returns>The RealmEyeResponse object.</returns>
+		public static RealmEyePlayerResponse GenerateGenericResponse(ResultCode statusCode)
+			=> new()
+			{
+				ProfileIsPrivate = true,
+				SectionIsPrivate = true,
+				ResultCode = statusCode
 			};
 	}
 }

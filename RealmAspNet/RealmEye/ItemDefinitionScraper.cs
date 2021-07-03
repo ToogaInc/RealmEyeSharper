@@ -20,7 +20,6 @@ namespace RealmAspNet.RealmEye
 		public static async Task<(Dictionary<int, ItemData> idToObj, Dictionary<string, ItemData> nameToObj)>
 			GetDefinitions()
 		{
-			Console.WriteLine("Called!");
 			using var httpMessage = new HttpRequestMessage
 			{
 				RequestUri = new Uri("https://www.realmeye.com/s/y3/js/definition.js"),

@@ -187,55 +187,12 @@ namespace RealmAspNet.RealmEye
 					else
 						petId = attr;
 				}
+
 				var isParsedPetId = int.TryParse(petId, out var parsedPetId);
 
 				// character display: column 2
 				var characterDisplay = characterRow.SelectSingleNode($"td[{2 - tableOffset}]");
-				var characterDisplayInfo = new CharacterSkinInfo
-				{
-					AccessoryDyeId = -1,
-					AccessoryDyeName = string.Empty,
-					ClothingDyeId = -1,
-					ClothingDyeName = string.Empty
-				};
-				
-				if (characterDisplay is not null)
-				{
-					// The big one
-					var accessoryDye = characterDisplay.FirstChild
-						.Attributes["data-accessory-dye-id"]
-						.Value;
-					var isAccessoryDyeIdParsed = int.TryParse(accessoryDye, out var parsedAccessoryDye);
-					
-					characterDisplayInfo.AccessoryDyeId = isAccessoryDyeIdParsed ? parsedAccessoryDye : -1;
-					characterDisplayInfo.AccessoryDyeName = isAccessoryDyeIdParsed
-						? IdToItem.TryGetValue(parsedAccessoryDye, out var resAccObj)
-							? resAccObj.Name
-							: string.Empty
-						: string.Empty;
-					
-					// The small one
-					var clothingDye = characterDisplay.FirstChild
-						.Attributes["data-clothing-dye-id"]
-						.Value;
-					var isClothingDyeIdParsed = int.TryParse(clothingDye, out var parsedClothingDye);
-					
-					characterDisplayInfo.ClothingDyeId = isClothingDyeIdParsed ? parsedClothingDye : -1;
-					characterDisplayInfo.ClothingDyeName = isClothingDyeIdParsed
-						? IdToItem.TryGetValue(parsedClothingDye, out var resCloObj)
-							? resCloObj.Name
-							: string.Empty
-						: string.Empty;
-					
-					// Skin id
-					var skinId = characterDisplay.FirstChild
-						.Attributes["data-skin"]
-						.Value;
-					var isSkinIdParsed = int.TryParse(skinId, out var parsedSkinDye);
-					characterDisplayInfo.SkinId = isSkinIdParsed
-						? parsedSkinDye
-						: -1;
-				}
+				var characterDisplayInfo = GetCharacterDisplayInfo(characterDisplay);
 
 				// character class type: column 3
 				var characterType = characterRow.SelectSingleNode($"td[{3 - tableOffset}]").InnerText;
@@ -273,38 +230,11 @@ namespace RealmAspNet.RealmEye
 					: -1;
 
 				// equipment
-				var characterEquipment = new List<GearInfo>();
 				var equips = characterRow
 					.SelectSingleNode($"td[{9 - tableOffset}]")
 					// <span class="item-wrapper">...
 					.ChildNodes;
-				for (var i = 0; i < 4; i++)
-				{
-					// equips[i] -> everything inside <span class="item-wrapper">
-					var itemContainer = equips[i].ChildNodes[0];
-					if (itemContainer.ChildNodes.Count == 0)
-					{
-						characterEquipment.Add(new GearInfo
-						{
-							Tier = string.Empty,
-							Id = -1,
-							Name = "Empty Slot"
-						});
-						continue;
-					}
-
-					var itemName = WebUtility.HtmlDecode(itemContainer.ChildNodes[0].Attributes["title"].Value);
-					var splitName = itemName.Split(" ");
-					var parsedName = string.Join(" ", splitName[..^1]);
-					characterEquipment.Add(new GearInfo
-					{
-						Tier = splitName[^1],
-						Name = parsedName,
-						Id = NameToItem.TryGetValue(parsedName, out var val)
-							? val.Id
-							: -1
-					});
-				}
+				var characterEquipment = GetEquipment(equips);
 
 				// player stats 
 				// <span class = "player-stats" ...
@@ -550,7 +480,7 @@ namespace RealmAspNet.RealmEye
 			    && gyInfoHead.InnerText.Contains("The graveyard of"))
 				return new GraveyardData {ResultCode = ResultCode.Success, ProfileIsPrivate = false};
 
-			if (gyInfoHead != null && gyInfoHead.InnerText == "No data available yet.")
+			if (gyInfoHead is {InnerText: "No data available yet."})
 				return new GraveyardData
 				{
 					ResultCode = ResultCode.Success,
@@ -603,7 +533,7 @@ namespace RealmAspNet.RealmEye
 					.SelectNodes("tbody/tr");
 
 				// td[1] => date
-				// td[2] => garbage
+				// td[2] => character dye info
 				// td[3] => class name
 				// td[4] => level
 				// td[5] => base fame
@@ -615,25 +545,22 @@ namespace RealmAspNet.RealmEye
 				foreach (var gyRow in graveyardTable)
 				{
 					var diedOn = gyRow.SelectSingleNode("td[1]").InnerText;
+
+					// character display: column 2
+					var characterDisplay = gyRow.SelectSingleNode("td[2]");
+					var characterDisplayInfo = GetCharacterDisplayInfo(characterDisplay);
+
 					var character = gyRow.SelectSingleNode("td[3]").InnerText;
 					var level = int.Parse(gyRow.SelectSingleNode("td[4]").InnerText);
 					var baseFame = int.Parse(gyRow.SelectSingleNode("td[5]").InnerText);
 					var totalFame = int.Parse(gyRow.SelectSingleNode("td[6]").FirstChild.InnerText);
 					var exp = long.Parse(gyRow.SelectSingleNode("td[7]").InnerText);
 
-					var characterEquipment = new List<string>();
 					var equips = gyRow
 						.SelectSingleNode("td[8]")
 						// <span class="item-wrapper">...
 						.ChildNodes;
-					for (var i = 0; i < 4; i++)
-					{
-						// equips[i] -> everything inside <span class="item-wrapper">
-						var itemContainer = equips[i].ChildNodes[0];
-						characterEquipment.Add(itemContainer.ChildNodes.Count == 0
-							? "Empty Slot"
-							: WebUtility.HtmlDecode(itemContainer.ChildNodes[0].Attributes["title"].Value));
-					}
+					var characterEquipment = GetEquipment(equips);
 
 					var hadBackpack = equips.Count == 5;
 					var statsMaxed = int.Parse(gyRow.SelectSingleNode("td[9]")
@@ -643,6 +570,7 @@ namespace RealmAspNet.RealmEye
 					returnData.Graveyard.Add(new GraveyardEntry
 					{
 						DiedOn = diedOn,
+						CharacterSkin = characterDisplayInfo,
 						BaseFame = baseFame,
 						Character = character,
 						Equipment = characterEquipment.ToArray(),
@@ -699,7 +627,7 @@ namespace RealmAspNet.RealmEye
 				Name = name
 			};
 
-			if (gyInfoHead != null && gyInfoHead.InnerText == "No data available yet.")
+			if (gyInfoHead is {InnerText: "No data available yet."})
 				return returnData;
 
 			var allPossibleTables = document.DocumentNode
@@ -1213,6 +1141,109 @@ namespace RealmAspNet.RealmEye
 			}
 
 			return returnData;
+		}
+
+
+		// =================================================================== //
+		//					HELPER METHODS BELOW							   //
+		// =================================================================== //
+
+		/// <summary>
+		/// Gets the character cosmetics information.
+		/// </summary>
+		/// <param name="characterDisplay">The node containing the character cosmetics information (like what
+		/// dyes/clothing the character is wearing).</param>
+		/// <returns>The character display information.</returns>
+		private static CharacterSkinInfo GetCharacterDisplayInfo(HtmlNode? characterDisplay)
+		{
+			var characterDisplayInfo = new CharacterSkinInfo
+			{
+				AccessoryDyeId = -1,
+				AccessoryDyeName = string.Empty,
+				ClothingDyeId = -1,
+				ClothingDyeName = string.Empty
+			};
+
+			if (characterDisplay is not null)
+			{
+				// The big one
+				var accessoryDye = characterDisplay.FirstChild
+					.Attributes["data-accessory-dye-id"]
+					.Value;
+				var isAccessoryDyeIdParsed = int.TryParse(accessoryDye, out var parsedAccessoryDye);
+
+				characterDisplayInfo.AccessoryDyeId = isAccessoryDyeIdParsed ? parsedAccessoryDye : -1;
+				characterDisplayInfo.AccessoryDyeName = isAccessoryDyeIdParsed
+					? IdToItem.TryGetValue(parsedAccessoryDye, out var resAccObj)
+						? resAccObj.Name
+						: string.Empty
+					: string.Empty;
+
+				// The small one
+				var clothingDye = characterDisplay.FirstChild
+					.Attributes["data-clothing-dye-id"]
+					.Value;
+				var isClothingDyeIdParsed = int.TryParse(clothingDye, out var parsedClothingDye);
+
+				characterDisplayInfo.ClothingDyeId = isClothingDyeIdParsed ? parsedClothingDye : -1;
+				characterDisplayInfo.ClothingDyeName = isClothingDyeIdParsed
+					? IdToItem.TryGetValue(parsedClothingDye, out var resCloObj)
+						? resCloObj.Name
+						: string.Empty
+					: string.Empty;
+
+				// Skin id
+				var skinId = characterDisplay.FirstChild
+					.Attributes["data-skin"]
+					.Value;
+				var isSkinIdParsed = int.TryParse(skinId, out var parsedSkinDye);
+				characterDisplayInfo.SkinId = isSkinIdParsed
+					? parsedSkinDye
+					: -1;
+			}
+
+			return characterDisplayInfo;
+		}
+
+		/// <summary>
+		/// Gets the character's equipment.
+		/// </summary>
+		/// <param name="equips">The node containing the equipment information for the character.</param>
+		/// <returns>The list of equipment the character is wearing.</returns>
+		private static List<GearInfo> GetEquipment(HtmlNodeCollection? equips)
+		{
+			var gearInfo = new List<GearInfo>();
+			if (equips is null) return gearInfo;
+
+			for (var i = 0; i < 4; i++)
+			{
+				// equips[i] -> everything inside <span class="item-wrapper">
+				var itemContainer = equips[i].ChildNodes[0];
+				if (itemContainer.ChildNodes.Count == 0)
+				{
+					gearInfo.Add(new GearInfo
+					{
+						Tier = string.Empty,
+						Id = -1,
+						Name = "Empty Slot"
+					});
+					continue;
+				}
+
+				var itemName = WebUtility.HtmlDecode(itemContainer.ChildNodes[0].Attributes["title"].Value);
+				var splitName = itemName.Split(" ");
+				var parsedName = string.Join(" ", splitName[..^1]);
+				gearInfo.Add(new GearInfo
+				{
+					Tier = splitName[^1],
+					Name = parsedName,
+					Id = NameToItem.TryGetValue(parsedName, out var val)
+						? val.Id
+						: -1
+				});
+			}
+
+			return gearInfo;
 		}
 	}
 }

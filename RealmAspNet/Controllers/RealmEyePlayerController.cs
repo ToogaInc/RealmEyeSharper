@@ -32,7 +32,7 @@ namespace RealmAspNet.Controllers
 		public async Task<RealmEyeResponse> GetPetYardAsync(string name)
 			=> await GetRealmSharperResponse(PlayerScraper.ScrapePetYardAsync(name), "GetPetYardAsync");
 
-		[HttpGet("graveyard/{name}/{amt?}")]
+		[HttpGet("graveyard/{name}/{amt:int?}")]
 		public async Task<RealmEyeResponse> ScrapeGraveyardAsync(string name, int amt = 1)
 			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardAsync(name, amt), "ScrapeGraveyardAsync");
 

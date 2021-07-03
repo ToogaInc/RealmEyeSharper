@@ -5,10 +5,6 @@ An unofficial RealmEye API.
 
 An ASP.NET API Application that is designed to scrape RealmEye and provide some additional support for Realm of the Mad God (RotMG) Discord raiding bots and applications.
 
-The `RealmSharper` solution contains the actual scraper logic. That is, `RealmSharper` contains code that is designed to scrape various aspects of a user's RealmEye profile.
-
-The `RealmAspNet` solution, as the name implies, is the ASP.NET Core application that any other codebase can make requests to. This solution also contains some extra features like a basic `/who` parser.
-
 ## Built With
 - .NET 5.0
 - ASP.NET
@@ -73,6 +69,9 @@ This is guaranteed to return a JSON that looks like:
 ```
 
 If it wasn't clear enough, the idea is that if the API is online, then you would get a response. Otherwise, your HTTP client will throw some sort of an exception. In particular, this endpoint is useful if you want to check if the API is online *before* making any further requests.
+
+## Setup 
+Coming soon.
 
 ## Acknowledgements
 Inspired by Nightfirecat's [RealmEye API](https://github.com/Nightfirecat/RealmEye-API).

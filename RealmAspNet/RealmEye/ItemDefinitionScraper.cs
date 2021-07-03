@@ -17,9 +17,10 @@ namespace RealmAspNet.RealmEye
 		/// <returns>A tuple containing two dictionaries. The first dictionary consists of the item ID as the key and
 		/// the item object as the value. The second dictionary consists of the item name as the key and the item object
 		/// as the value.</returns>
-		public static async Task<(Dictionary<string, ItemData> idToObj, Dictionary<string, ItemData> nameToObj)> 
+		public static async Task<(Dictionary<int, ItemData> idToObj, Dictionary<string, ItemData> nameToObj)>
 			GetDefinitions()
 		{
+			Console.WriteLine("Called!");
 			using var httpMessage = new HttpRequestMessage
 			{
 				RequestUri = new Uri("https://www.realmeye.com/s/y3/js/definition.js"),
@@ -34,30 +35,44 @@ namespace RealmAspNet.RealmEye
 				.Split(":[")
 				.SelectMany(x => x.Split("],").ToArray())
 				.ToArray();
-			var idToInfoDict = new Dictionary<string, ItemData>();
+			var idToInfoDict = new Dictionary<int, ItemData>();
 			for (var i = 0; i < items.Length; i += 2)
 			{
 				// item[i] = "item"
 				// key = item
-				var key = items[i].Replace("\"", string.Empty);
-				// splitVal = ["Item name	0,-1,0,,0,0,0]
+				var idStr = items[i].Replace("\"", string.Empty);
+				var id = int.TryParse(
+					idStr,
+					NumberStyles.Integer | NumberStyles.AllowExponent,
+					NumberFormatInfo.CurrentInfo,
+					out var parsedId
+				) ? parsedId : -2;
+
+				if (id == -2)
+				{
+					await Console.Error.WriteLineAsync($"[Error] {idStr} is invalid ID. Skipping.");
+					continue;
+				}
+				
+				// splitVal = ["Item name	0,-1,0,0,0,0]
 				var splitVal = items[i + 1].Split("\",");
 				// val = Item name
 				var name = splitVal[0][1..];
 				var rest = splitVal[1].Split(",")
-					.Where(x => int.TryParse(x, NumberStyles.Integer | NumberStyles.AllowExponent, NumberFormatInfo.CurrentInfo, out _))
+					.Where(x => int.TryParse(x, NumberStyles.Integer | NumberStyles.AllowExponent,
+						NumberFormatInfo.CurrentInfo, out _))
 					.Select(x => int.Parse(x, NumberStyles.Integer | NumberStyles.AllowExponent))
 					.ToArray();
-				
+
 				var xCoord = rest.Length > 5
 					? rest[2]
 					: rest[0];
 				var yCoord = rest.Length > 5
 					? rest[3]
 					: rest[1];
-				idToInfoDict.Add(key, new ItemData
+				idToInfoDict.Add(id, new ItemData
 				{
-					Id = key,
+					Id = id,
 					Name = name,
 					X = xCoord,
 					Y = yCoord
@@ -70,7 +85,7 @@ namespace RealmAspNet.RealmEye
 				if (nameToIdDict.ContainsKey(obj.Name)) continue;
 				nameToIdDict.Add(obj.Name, obj);
 			}
-				
+
 			return (idToInfoDict, nameToIdDict);
 		}
 	}

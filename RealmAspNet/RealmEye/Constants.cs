@@ -11,11 +11,11 @@ namespace RealmAspNet.RealmEye
 		                                "like Gecko) Chrome/87.0.4280.88 Safari/537.36";
 		public const string RealmEyeBaseUrl = "https://www.realmeye.com";
 
-		public static readonly HttpClient Client;
-		public static IDictionary<string, ItemData> IdToItem;
+		public static HttpClient Client;
+		public static IDictionary<int, ItemData> IdToItem;
 		public static IDictionary<string, ItemData> NameToItem;
 		
-		static Constants()
+		public static void InitConstants()
 		{
 			using var timer = new Timer
 			{

@@ -71,13 +71,13 @@ namespace RealmAspNet.RealmEye
 		public static async Task<PlayerData> ScrapePlayerProfileAsync(string name)
 		{
 			var document = await GetDocument($"{RealmEyeBaseUrl}/{PlayerSegment}/{name}");
-			
+
 			if (document is null)
 				return new PlayerData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
 			if (IsPrivate(document))
 				return new PlayerData {ResultCode = ResultCode.NotFound, Name = name};
-			
+
 			// profile public
 			// scrap time
 			var returnData = new PlayerData
@@ -187,8 +187,56 @@ namespace RealmAspNet.RealmEye
 					else
 						petId = attr;
 				}
+				var isParsedPetId = int.TryParse(petId, out var parsedPetId);
 
 				// character display: column 2
+				var characterDisplay = characterRow.SelectSingleNode($"td[{2 - tableOffset}]");
+				var characterDisplayInfo = new CharacterSkinInfo
+				{
+					AccessoryDyeId = -1,
+					AccessoryDyeName = string.Empty,
+					ClothingDyeId = -1,
+					ClothingDyeName = string.Empty
+				};
+				
+				if (characterDisplay is not null)
+				{
+					// The big one
+					var accessoryDye = characterDisplay.FirstChild
+						.Attributes["data-accessory-dye-id"]
+						.Value;
+					var isAccessoryDyeIdParsed = int.TryParse(accessoryDye, out var parsedAccessoryDye);
+					
+					characterDisplayInfo.AccessoryDyeId = isAccessoryDyeIdParsed ? parsedAccessoryDye : -1;
+					characterDisplayInfo.AccessoryDyeName = isAccessoryDyeIdParsed
+						? IdToItem.TryGetValue(parsedAccessoryDye, out var resAccObj)
+							? resAccObj.Name
+							: string.Empty
+						: string.Empty;
+					
+					// The small one
+					var clothingDye = characterDisplay.FirstChild
+						.Attributes["data-clothing-dye-id"]
+						.Value;
+					var isClothingDyeIdParsed = int.TryParse(clothingDye, out var parsedClothingDye);
+					
+					characterDisplayInfo.ClothingDyeId = isClothingDyeIdParsed ? parsedClothingDye : -1;
+					characterDisplayInfo.ClothingDyeName = isClothingDyeIdParsed
+						? IdToItem.TryGetValue(parsedClothingDye, out var resCloObj)
+							? resCloObj.Name
+							: string.Empty
+						: string.Empty;
+					
+					// Skin id
+					var skinId = characterDisplay.FirstChild
+						.Attributes["data-skin"]
+						.Value;
+					var isSkinIdParsed = int.TryParse(skinId, out var parsedSkinDye);
+					characterDisplayInfo.SkinId = isSkinIdParsed
+						? parsedSkinDye
+						: -1;
+				}
+
 				// character class type: column 3
 				var characterType = characterRow.SelectSingleNode($"td[{3 - tableOffset}]").InnerText;
 
@@ -225,7 +273,7 @@ namespace RealmAspNet.RealmEye
 					: -1;
 
 				// equipment
-				var characterEquipment = new List<string>();
+				var characterEquipment = new List<GearInfo>();
 				var equips = characterRow
 					.SelectSingleNode($"td[{9 - tableOffset}]")
 					// <span class="item-wrapper">...
@@ -234,9 +282,28 @@ namespace RealmAspNet.RealmEye
 				{
 					// equips[i] -> everything inside <span class="item-wrapper">
 					var itemContainer = equips[i].ChildNodes[0];
-					characterEquipment.Add(itemContainer.ChildNodes.Count == 0
-						? "Empty Slot"
-						: WebUtility.HtmlDecode(itemContainer.ChildNodes[0].Attributes["title"].Value));
+					if (itemContainer.ChildNodes.Count == 0)
+					{
+						characterEquipment.Add(new GearInfo
+						{
+							Tier = string.Empty,
+							Id = -1,
+							Name = "Empty Slot"
+						});
+						continue;
+					}
+
+					var itemName = WebUtility.HtmlDecode(itemContainer.ChildNodes[0].Attributes["title"].Value);
+					var splitName = itemName.Split(" ");
+					var parsedName = string.Join(" ", splitName[..^1]);
+					characterEquipment.Add(new GearInfo
+					{
+						Tier = splitName[^1],
+						Name = parsedName,
+						Id = NameToItem.TryGetValue(parsedName, out var val)
+							? val.Id
+							: -1
+					});
 				}
 
 				// player stats 
@@ -286,11 +353,14 @@ namespace RealmAspNet.RealmEye
 
 				returnData.Characters.Add(new CharacterEntry
 				{
-					Pet = petId == string.Empty
-						? string.Empty
-						: IdToItem.TryGetValue(petId, out var a)
-							? a.Name
-							: $"PET_ID: {petId}",
+					Pet = new PetInfo
+					{
+						Name = isParsedPetId
+							? IdToItem.TryGetValue(parsedPetId, out var a) ? a.Name : $"PET_ID: {petId}"
+							: string.Empty,
+						Id = isParsedPetId ? parsedPetId : -1
+					},
+					CharacterSkin = characterDisplayInfo,
 					CharacterType = characterType,
 					ClassQuestsCompleted = cqc,
 					EquipmentData = characterEquipment.ToArray(),
@@ -429,7 +499,7 @@ namespace RealmAspNet.RealmEye
 
 				returnData.Pets.Add(new PetEntry
 				{
-					PetSkinName = IdToItem.TryGetValue(petId.ToString(), out var data)
+					PetSkinName = IdToItem.TryGetValue(petId, out var data)
 						? data.Name
 						: $"PET_ID: {petId}",
 					Family = family,
@@ -521,7 +591,7 @@ namespace RealmAspNet.RealmEye
 				if (index != 1)
 				{
 					document = await GetDocument($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}/{index}");
-					if (document is null) break; 
+					if (document is null) break;
 				}
 
 				var graveyardTable = document.DocumentNode
@@ -823,7 +893,7 @@ namespace RealmAspNet.RealmEye
 
 			if (fameNode is null)
 				return returnData;
-			
+
 			var arraysStr = fameNode.InnerText
 				.Split("initializeGraphs(")[1]
 				.Split(", \"")[0];
@@ -872,7 +942,7 @@ namespace RealmAspNet.RealmEye
 						.Select(x => long.Parse(x.Trim()))
 						.ToArray();
 					var date = new DateTime(dateTime.Ticks - 1000 * timeFame[0]);
-					returnData.Week.Add(new TimeFame { Fame = timeFame[1], Time = date.Ticks });
+					returnData.Week.Add(new TimeFame {Fame = timeFame[1], Time = date.Ticks});
 					res = res.NextMatch();
 				}
 
@@ -892,7 +962,7 @@ namespace RealmAspNet.RealmEye
 						.Select(x => long.Parse(x.Trim()))
 						.ToArray();
 					var date = new DateTime(dateTime.Ticks - 1000 * timeFame[0]);
-					returnData.Hour.Add(new TimeFame { Fame = timeFame[1], Time = date.Ticks });
+					returnData.Hour.Add(new TimeFame {Fame = timeFame[1], Time = date.Ticks});
 					res = res.NextMatch();
 				}
 			}

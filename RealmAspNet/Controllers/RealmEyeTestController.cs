@@ -20,26 +20,18 @@ namespace RealmAspNet.Controllers
 		public RealmEyeTestController(ILogger<RealmEyeTestController> logger)
 			=> _logger = logger;
 
-		[HttpGet("idtonamedict")]
-		public async Task<Dictionary<string, ItemData>> GetIdToNameDefinitionsAsync()
+		[HttpGet("idDict")]
+		public IDictionary<int, ItemData> GetIdToObjDefinitionsAsync()
 		{
-			var sw = Stopwatch.StartNew(); 
-			var (idToName, _) = await ItemDefinitionScraper.GetDefinitions();
-			sw.Stop();
-			_logger.Log(LogLevel.Information, $"[GetDefinitionsAsync] Requested {idToName.Count} Entries " +
-			                                  $"=> {sw.ElapsedMilliseconds} MS");
-			return idToName;
+			_logger.Log(LogLevel.Information, $"[GetIdToObj] Requested {Constants.NameToItem.Count} Entries");
+			return Constants.IdToItem;
 		}
 		
-		[HttpGet("nametoiddict")]
-		public async Task<Dictionary<string, ItemData>> GetNameToIdDefinitionsAsync()
+		[HttpGet("nameDict")]
+		public IDictionary<string, ItemData> GetNameToObjDefinitionsAsync()
 		{
-			var sw = Stopwatch.StartNew(); 
-			var (_, nameToId) = await ItemDefinitionScraper.GetDefinitions();
-			sw.Stop();
-			_logger.Log(LogLevel.Information, $"[GetDefinitionsAsync] Requested {nameToId.Count} Entries " +
-			                                  $"=> {sw.ElapsedMilliseconds} MS");
-			return nameToId;
+			_logger.Log(LogLevel.Information, $"[GetNameToObj] Requested {Constants.NameToItem.Count} Entries");
+			return Constants.NameToItem;
 		}
 	}
 }

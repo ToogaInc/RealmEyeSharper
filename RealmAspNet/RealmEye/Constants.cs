@@ -2,25 +2,18 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Timers;
-using ScrapySharp.Network;
 
 namespace RealmAspNet.RealmEye
 {
 	internal static class Constants
 	{
-		public static readonly ScrapingBrowser Browser = new()
-		{
-			AllowAutoRedirect = true,
-			AllowMetaRedirect = true,
-			UserAgent = new FakeUserAgent("RealmSharper", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36")
-		};
-
 		public const string UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, " +
 		                                "like Gecko) Chrome/87.0.4280.88 Safari/537.36";
 		public const string RealmEyeBaseUrl = "https://www.realmeye.com";
 
 		public static readonly HttpClient Client;
-		public static IDictionary<string, string> IdToItem;
+		public static IDictionary<string, ItemData> IdToItem;
+		public static IDictionary<string, ItemData> NameToItem;
 		
 		static Constants()
 		{
@@ -34,7 +27,7 @@ namespace RealmAspNet.RealmEye
 			{
 				try
 				{
-					IdToItem = await ItemDefinitionScraper.GetDefinitions();
+					(IdToItem, NameToItem) = await ItemDefinitionScraper.GetDefinitions();
 				}
 				catch (Exception)
 				{
@@ -43,11 +36,14 @@ namespace RealmAspNet.RealmEye
 			};
 			
 			timer.Start();
-			
-			Client = new HttpClient();
+
+			Client = new HttpClient(new HttpClientHandler
+			{
+				AllowAutoRedirect = true
+			});
 			Client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 
-			IdToItem = ItemDefinitionScraper.GetDefinitions().Result;
+			(IdToItem, NameToItem) = ItemDefinitionScraper.GetDefinitions().Result;
 		}
 	}
 }

@@ -20,15 +20,26 @@ namespace RealmAspNet.Controllers
 		public RealmEyeTestController(ILogger<RealmEyeTestController> logger)
 			=> _logger = logger;
 
-		[HttpGet("definitions")]
-		public async Task<Dictionary<string, string>> GetDefinitionsAsync()
+		[HttpGet("idtonamedict")]
+		public async Task<Dictionary<string, ItemData>> GetIdToNameDefinitionsAsync()
 		{
 			var sw = Stopwatch.StartNew(); 
-			var resp = await ItemDefinitionScraper.GetDefinitions();
+			var (idToName, _) = await ItemDefinitionScraper.GetDefinitions();
 			sw.Stop();
-			_logger.Log(LogLevel.Information, $"[GetDefinitionsAsync] Requested {resp.Count} Entries " +
+			_logger.Log(LogLevel.Information, $"[GetDefinitionsAsync] Requested {idToName.Count} Entries " +
 			                                  $"=> {sw.ElapsedMilliseconds} MS");
-			return resp;
+			return idToName;
+		}
+		
+		[HttpGet("nametoiddict")]
+		public async Task<Dictionary<string, ItemData>> GetNameToIdDefinitionsAsync()
+		{
+			var sw = Stopwatch.StartNew(); 
+			var (_, nameToId) = await ItemDefinitionScraper.GetDefinitions();
+			sw.Stop();
+			_logger.Log(LogLevel.Information, $"[GetDefinitionsAsync] Requested {nameToId.Count} Entries " +
+			                                  $"=> {sw.ElapsedMilliseconds} MS");
+			return nameToId;
 		}
 	}
 }

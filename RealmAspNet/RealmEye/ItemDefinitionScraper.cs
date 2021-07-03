@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -13,8 +14,11 @@ namespace RealmAspNet.RealmEye
 		/// Gets the latest definitions from RealmEye. The definitions here map the item IDs to a specified item,
 		/// which can be used to map items like pet skins. 
 		/// </summary>
-		/// <returns>A dictionary consisting of the item ID as the key and the item name as the value.</returns>
-		public static async Task<Dictionary<string, string>> GetDefinitions()
+		/// <returns>A tuple containing two dictionaries. The first dictionary consists of the item ID as the key and
+		/// the item object as the value. The second dictionary consists of the item name as the key and the item object
+		/// as the value.</returns>
+		public static async Task<(Dictionary<string, ItemData> idToObj, Dictionary<string, ItemData> nameToObj)> 
+			GetDefinitions()
 		{
 			using var httpMessage = new HttpRequestMessage
 			{
@@ -24,21 +28,50 @@ namespace RealmAspNet.RealmEye
 
 			using var httpResponse = await Client.SendAsync(httpMessage);
 			var content = await httpResponse.Content.ReadAsStringAsync();
-			// remove "items={" and the end "}" 
+			// remove "items={" and the end "]};" 
 			// then split
-			var items = content[7..^1]
+			var items = content[7..^3]
 				.Split(":[")
 				.SelectMany(x => x.Split("],").ToArray())
 				.ToArray();
-			var dict = new Dictionary<string, string>();
+			var idToInfoDict = new Dictionary<string, ItemData>();
 			for (var i = 0; i < items.Length; i += 2)
 			{
-				var k = items[i].Replace("\"", string.Empty);
-				var v = items[i + 1].Split("\",")[0][1..];
-				dict.Add(k, v);
+				// item[i] = "item"
+				// key = item
+				var key = items[i].Replace("\"", string.Empty);
+				// splitVal = ["Item name	0,-1,0,,0,0,0]
+				var splitVal = items[i + 1].Split("\",");
+				// val = Item name
+				var name = splitVal[0][1..];
+				var rest = splitVal[1].Split(",")
+					.Where(x => int.TryParse(x, NumberStyles.Integer | NumberStyles.AllowExponent, NumberFormatInfo.CurrentInfo, out _))
+					.Select(x => int.Parse(x, NumberStyles.Integer | NumberStyles.AllowExponent))
+					.ToArray();
+				
+				var xCoord = rest.Length > 5
+					? rest[2]
+					: rest[0];
+				var yCoord = rest.Length > 5
+					? rest[3]
+					: rest[1];
+				idToInfoDict.Add(key, new ItemData
+				{
+					Id = key,
+					Name = name,
+					X = xCoord,
+					Y = yCoord
+				});
+			}
+
+			var nameToIdDict = new Dictionary<string, ItemData>();
+			foreach (var (_, obj) in idToInfoDict)
+			{
+				if (nameToIdDict.ContainsKey(obj.Name)) continue;
+				nameToIdDict.Add(obj.Name, obj);
 			}
 				
-			return dict;
+			return (idToInfoDict, nameToIdDict);
 		}
 	}
 }

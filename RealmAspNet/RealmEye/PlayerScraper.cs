@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -6,10 +7,10 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using HtmlAgilityPack;
 using RealmAspNet.RealmEye.Definitions;
 using RealmAspNet.RealmEye.Definitions.Player;
 using ScrapySharp.Extensions;
-using ScrapySharp.Network;
 using static RealmAspNet.RealmEye.Constants;
 
 namespace RealmAspNet.RealmEye
@@ -32,12 +33,33 @@ namespace RealmAspNet.RealmEye
 		/// <summary>
 		/// Whether the profile is private or not.
 		/// </summary>
-		/// <param name="page">The WebPage object representing the RealmEye page.</param>
+		/// <param name="doc">The HtmlDocument representing the RealmEye page.</param>
 		/// <returns>Whether the profile is private or not.</returns>
-		private static bool IsPrivate(WebPage page)
+		private static bool IsPrivate(HtmlDocument doc)
 		{
-			var mainElement = page.Html.CssSelect(".col-md-12");
+			var mainElement = doc.DocumentNode.CssSelect(".col-md-12");
 			return mainElement.CssSelect(".player-not-found").Any();
+		}
+
+		/// <summary>
+		/// Gets the HtmlDocument from the corresponding URL..
+		/// </summary>
+		/// <param name="url">The URL.</param>
+		/// <returns>The HtmlDocument object.</returns>
+		private static async Task<HtmlDocument?> GetDocument(string url)
+		{
+			try
+			{
+				using var page = await Client.GetAsync(url);
+				var doc = new HtmlDocument();
+				doc.LoadHtml(await page.Content.ReadAsStringAsync());
+				return doc;
+			}
+			catch (Exception e)
+			{
+				await Console.Error.WriteLineAsync(e.ToString());
+				return null;
+			}
 		}
 
 		/// <summary>
@@ -48,26 +70,25 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The player data.</returns>
 		public static async Task<PlayerData> ScrapePlayerProfileAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{PlayerSegment}/{name}"));
-
-			if (page == null)
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{PlayerSegment}/{name}");
+			
+			if (document is null)
 				return new PlayerData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new PlayerData {ResultCode = ResultCode.NotFound, Name = name};
-
+			
 			// profile public
 			// scrap time
 			var returnData = new PlayerData
 			{
-				Name = page.Html.CssSelect(".entity-name").First().InnerText,
+				Name = document.DocumentNode.CssSelect(".entity-name").First().InnerText,
 				ResultCode = ResultCode.Success,
 				ProfileIsPrivate = false,
 				SectionIsPrivate = false
 			};
 
-			var summaryTable = page.Html.CssSelect(".summary").First();
+			var summaryTable = document.DocumentNode.CssSelect(".summary").First();
 			var numChars = -1;
 			// <tr> 
 			foreach (var row in summaryTable.SelectNodes("tr"))
@@ -119,7 +140,7 @@ namespace RealmAspNet.RealmEye
 			var finalDesc = new List<string>();
 			for (var i = 1; i <= 3; i++)
 			{
-				var possDesc = page.Html.SelectNodes($"//div[contains(@class, 'line{i}')]");
+				var possDesc = document.DocumentNode.SelectNodes($"//div[contains(@class, 'line{i}')]");
 				if (possDesc != null && possDesc.Count != 0 && possDesc[0].InnerText.Length != 0)
 					finalDesc.Add(HttpUtility.HtmlDecode(possDesc[0].InnerText));
 			}
@@ -135,8 +156,7 @@ namespace RealmAspNet.RealmEye
 			}
 
 			// this is the only table with an id
-			var charTable = page.Html
-				.SelectNodes("//table[@id]/tbody/tr");
+			var charTable = document.DocumentNode.SelectNodes("//table[@id]/tbody/tr");
 
 			// td[3] => character type
 			// td[4] => level
@@ -269,7 +289,7 @@ namespace RealmAspNet.RealmEye
 					Pet = petId == string.Empty
 						? string.Empty
 						: IdToItem.TryGetValue(petId, out var a)
-							? a
+							? a.Name
 							: $"PET_ID: {petId}",
 					CharacterType = characterType,
 					ClassQuestsCompleted = cqc,
@@ -295,13 +315,12 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The person's pet yard data.</returns>
 		public static async Task<PetYardData> ScrapePetYardAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{PetYardSegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{PetYardSegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new PetYardData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new PetYardData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new PetYardData
@@ -311,10 +330,10 @@ namespace RealmAspNet.RealmEye
 				Name = name
 			};
 
-			var mainElem = page.Html.CssSelect(".col-md-12").First();
+			var mainElem = document.DocumentNode.CssSelect(".col-md-12").First();
 			var petsPrivateTag = mainElem.SelectSingleNode("//div[@class='col-md-12']/h3");
 
-			if (petsPrivateTag != null && petsPrivateTag.InnerText == "Pets are hidden.")
+			if (petsPrivateTag is {InnerText: "Pets are hidden."})
 				return new PetYardData {ProfileIsPrivate = false};
 
 			returnData.SectionIsPrivate = false;
@@ -323,8 +342,7 @@ namespace RealmAspNet.RealmEye
 			if (petsPrivateTag != null && petsPrivateTag.InnerText.Contains("has no pets."))
 				return returnData;
 
-			var petTable = page.Html
-				.SelectNodes("//table[@id]/tbody/tr");
+			var petTable = document.DocumentNode.SelectNodes("//table[@id]/tbody/tr");
 
 			// td[1] => span class, data-item
 			// td[2] => name of pet
@@ -411,8 +429,8 @@ namespace RealmAspNet.RealmEye
 
 				returnData.Pets.Add(new PetEntry
 				{
-					PetSkinName = IdToItem.TryGetValue($"{petId}", out name)
-						? name
+					PetSkinName = IdToItem.TryGetValue(petId.ToString(), out var data)
+						? data.Name
 						: $"PET_ID: {petId}",
 					Family = family,
 					MaxLevel = maxLevel,
@@ -442,16 +460,15 @@ namespace RealmAspNet.RealmEye
 			if (limit > 100)
 				limit = 100;
 
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new GraveyardData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new GraveyardData {ResultCode = ResultCode.NotFound, Name = name};
 
-			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var colMd = document.DocumentNode.CssSelect(".col-md-12").First();
 			// this probably isnt the best way
 			// to do it.
 			var gyInfoPara = colMd.SelectSingleNode("//div[@class='col-md-12']/p/text()");
@@ -502,10 +519,12 @@ namespace RealmAspNet.RealmEye
 			for (var index = 1; index <= lowestPossibleAmt + 1; index += 100)
 			{
 				if (index != 1)
-					page = await Browser
-						.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}/{index}"));
+				{
+					document = await GetDocument($"{RealmEyeBaseUrl}/{GraveyardSegment}/{name}/{index}");
+					if (document is null) break; 
+				}
 
-				var graveyardTable = page.Html
+				var graveyardTable = document.DocumentNode
 					.CssSelect(".table-responsive")
 					.CssSelect(".table")
 					.First()
@@ -579,18 +598,17 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The person's graveyard summary.</returns>
 		public static async Task<GraveyardSummaryData> ScrapeGraveyardSummaryAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GraveyardSummarySegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{GraveyardSummarySegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new GraveyardSummaryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new GraveyardSummaryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			// this probably isnt the best way
 			// to do it.
-			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var colMd = document.DocumentNode.CssSelect(".col-md-12").First();
 			var gyInfoHead = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
 
 			if (gyInfoHead != null
@@ -613,7 +631,7 @@ namespace RealmAspNet.RealmEye
 			if (gyInfoHead != null && gyInfoHead.InnerText == "No data available yet.")
 				return returnData;
 
-			var allPossibleTables = page.Html
+			var allPossibleTables = document.DocumentNode
 				.CssSelect(".table-responsive")
 				.CssSelect(".table")
 				.ToArray();
@@ -717,13 +735,12 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The person's name history.</returns>
 		public static async Task<NameHistoryData> ScrapeNameHistoryAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{NameHistorySegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{NameHistorySegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new NameHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new NameHistoryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new NameHistoryData
@@ -733,7 +750,7 @@ namespace RealmAspNet.RealmEye
 				Name = name
 			};
 
-			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var colMd = document.DocumentNode.CssSelect(".col-md-12").First();
 			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
 			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Name history is hidden"))
 				return returnData;
@@ -745,7 +762,7 @@ namespace RealmAspNet.RealmEye
 			if (nameHistExists.Count == 2 && nameHistExists.Last().InnerText.Contains("No name changes detected."))
 				return returnData;
 
-			var nameHistoryColl = page.Html
+			var nameHistoryColl = document.DocumentNode
 				.CssSelect(".table-responsive")
 				.CssSelect(".table")
 				.First()
@@ -778,13 +795,12 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The person's fame history.</returns>
 		public static async Task<FameHistoryData> ScrapeFameHistoryAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new FameHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new FameHistoryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new FameHistoryData
@@ -794,13 +810,13 @@ namespace RealmAspNet.RealmEye
 				Name = name
 			};
 
-			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var colMd = document.DocumentNode.CssSelect(".col-md-12").First();
 			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
 			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Fame history is hidden"))
 				return returnData;
 
 			returnData.SectionIsPrivate = false;
-			var fameNode = page.Html
+			var fameNode = document.DocumentNode
 				.Descendants("script")
 				.FirstOrDefault(x => x.InnerText.Contains("initializeSearch")
 				                     && x.InnerText.Contains("initializeGraphs"));
@@ -891,13 +907,12 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The person's rank history.</returns>
 		public static async Task<RankHistoryData> ScrapeRankHistoryAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{RankHistorySegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{RankHistorySegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new RankHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new RankHistoryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new RankHistoryData
@@ -907,7 +922,7 @@ namespace RealmAspNet.RealmEye
 				Name = name
 			};
 
-			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var colMd = document.DocumentNode.CssSelect(".col-md-12").First();
 
 			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
 			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Rank history is hidden"))
@@ -916,7 +931,7 @@ namespace RealmAspNet.RealmEye
 			returnData.SectionIsPrivate = false;
 			returnData.RankHistory = new List<RankHistoryEntry>();
 
-			var rankHistoryColl = page.Html
+			var rankHistoryColl = document.DocumentNode
 				.CssSelect(".table-responsive")
 				.CssSelect(".table")
 				.First()
@@ -948,13 +963,12 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The person's guild history.</returns>
 		public static async Task<GuildHistoryData> ScrapeGuildHistoryAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{GuildHistorySegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new GuildHistoryData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new GuildHistoryData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new GuildHistoryData
@@ -964,7 +978,7 @@ namespace RealmAspNet.RealmEye
 				Name = name
 			};
 
-			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var colMd = document.DocumentNode.CssSelect(".col-md-12").First();
 			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
 			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Guild history is hidden"))
 				return returnData;
@@ -978,7 +992,7 @@ namespace RealmAspNet.RealmEye
 			    && guildHistExists.Last().InnerText.Contains("No guild changes detected."))
 				return returnData;
 
-			var guildHistoryColl = page.Html
+			var guildHistoryColl = document.DocumentNode
 				.CssSelect(".table-responsive")
 				.CssSelect(".table")
 				.First()
@@ -1010,13 +1024,12 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The person's exaltations.</returns>
 		public static async Task<ExaltationData> ScrapeExaltationsAsync(string name)
 		{
-			var page = await Browser
-				.NavigateToPageAsync(new Uri($"{RealmEyeBaseUrl}/{ExaltationSegment}/{name}"));
+			var document = await GetDocument($"{RealmEyeBaseUrl}/{ExaltationSegment}/{name}");
 
-			if (page == null)
+			if (document is null)
 				return new ExaltationData {ResultCode = ResultCode.ServiceUnavailable, Name = name};
 
-			if (IsPrivate(page))
+			if (IsPrivate(document))
 				return new ExaltationData {ResultCode = ResultCode.NotFound, Name = name};
 
 			var returnData = new ExaltationData
@@ -1026,7 +1039,7 @@ namespace RealmAspNet.RealmEye
 				Name = name
 			};
 
-			var colMd = page.Html.CssSelect(".col-md-12").First();
+			var colMd = document.DocumentNode.CssSelect(".col-md-12").First();
 			var hiddenTxtHeader = colMd.SelectSingleNode("//div[@class='col-md-12']/h3/text()");
 
 			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("Exaltations are hidden"))
@@ -1038,7 +1051,7 @@ namespace RealmAspNet.RealmEye
 			if (hiddenTxtHeader != null && hiddenTxtHeader.InnerText.Contains("No exaltations"))
 				return returnData;
 
-			var exaltationTable = page.Html
+			var exaltationTable = document.DocumentNode
 				.CssSelect(".table-responsive")
 				.CssSelect(".table")
 				.First()

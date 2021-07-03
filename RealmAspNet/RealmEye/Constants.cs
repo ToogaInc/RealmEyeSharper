@@ -30,7 +30,7 @@ namespace RealmAspNet.RealmEye
 				Interval = TimeSpan.FromHours(1).TotalMilliseconds
 			};
 
-			timer.Elapsed += async (sender, args) =>
+			timer.Elapsed += async (_, _) =>
 			{
 				try
 				{

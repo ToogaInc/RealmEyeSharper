@@ -499,6 +499,7 @@ namespace RealmAspNet.RealmEye
 
 				returnData.Pets.Add(new PetEntry
 				{
+					Id = petId,
 					PetSkinName = IdToItem.TryGetValue(petId, out var data)
 						? data.Name
 						: $"PET_ID: {petId}",

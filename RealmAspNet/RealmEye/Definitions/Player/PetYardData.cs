@@ -9,6 +9,7 @@ namespace RealmAspNet.RealmEye.Definitions.Player
 
 	public struct PetEntry
 	{
+		public int Id { get; init; }
 		public string PetSkinName { get; init; }
 		public string Name { get; init; }
 		public string Rarity { get; init; }

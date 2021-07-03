@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using static RealmSharper.RealmEye.Constants;
+using static RealmAspNet.RealmEye.Constants;
 
-namespace RealmSharper.RealmEye
+namespace RealmAspNet.RealmEye
 {
 	public static class ItemDefinitionScraper
 	{

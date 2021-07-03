@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace RealmSharper.RealmEye.Definitions
+namespace RealmAspNet.RealmEye.Definitions.Player
 {
 	public class GraveyardData : RealmEyePlayerResponse
 	{

@@ -1,4 +1,4 @@
-﻿namespace RealmSharper.RealmEye.Definitions
+﻿namespace RealmAspNet.RealmEye.Definitions
 {
 	public class RealmEyeResponse
 	{

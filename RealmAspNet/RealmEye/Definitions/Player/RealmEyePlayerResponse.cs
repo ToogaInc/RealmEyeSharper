@@ -1,4 +1,4 @@
-﻿namespace RealmSharper.RealmEye.Definitions
+﻿namespace RealmAspNet.RealmEye.Definitions.Player
 {
 	public class RealmEyePlayerResponse : RealmEyeResponse
 	{

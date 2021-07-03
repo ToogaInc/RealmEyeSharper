@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Timers;
 using ScrapySharp.Network;
 
-namespace RealmSharper.RealmEye
+namespace RealmAspNet.RealmEye
 {
 	internal static class Constants
 	{

@@ -3,8 +3,9 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using RealmSharper.RealmEye;
-using RealmSharper.RealmEye.Definitions;
+using RealmAspNet.RealmEye;
+using RealmAspNet.RealmEye.Definitions;
+using RealmAspNet.RealmEye.Definitions.Player;
 
 namespace RealmAspNet.Controllers
 {

@@ -6,13 +6,13 @@ using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
-using HtmlAgilityPack;
-using RealmSharper.RealmEye.Definitions;
+using RealmAspNet.RealmEye.Definitions;
+using RealmAspNet.RealmEye.Definitions.Player;
 using ScrapySharp.Extensions;
 using ScrapySharp.Network;
-using static RealmSharper.RealmEye.Constants;
+using static RealmAspNet.RealmEye.Constants;
 
-namespace RealmSharper.RealmEye
+namespace RealmAspNet.RealmEye
 {
 	public static class PlayerScraper
 	{

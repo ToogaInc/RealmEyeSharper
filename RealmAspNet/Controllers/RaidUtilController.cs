@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -13,6 +12,9 @@ using Colourful;
 using Microsoft.Extensions.Logging;
 using RealmAspNet.Definitions;
 using RealmAspNet.Models;
+using RealmAspNet.RealmEye;
+using RealmAspNet.RealmEye.Definitions;
+using RealmAspNet.RealmEye.Definitions.Player;
 using Tesseract;
 
 namespace RealmAspNet.Controllers
@@ -21,9 +23,9 @@ namespace RealmAspNet.Controllers
 	[ApiController]
 	public class RaidUtilController : ControllerBase
 	{
+		private int _idx;
 		private readonly ILogger<RaidUtilController> _logger;
 		private readonly TesseractEngine _tesseractEngine;
-		private readonly HttpClient _client;
 
 		/// <summary>
 		/// Creates a new controller for this API.
@@ -31,11 +33,17 @@ namespace RealmAspNet.Controllers
 		/// <param name="logger">The logging object.</param>
 		public RaidUtilController(ILogger<RaidUtilController> logger)
 		{
+			_idx = 0;
 			_logger = logger;
 			_tesseractEngine = new TesseractEngine("./tessdata", "eng", EngineMode.Default);
-			_client = new HttpClient();
+			_currentParseJobs = new Dictionary<int, ParseJob>();
 		}
 
+		/// <summary>
+		/// Parses a who screenshot.
+		/// </summary>
+		/// <param name="model">An object containing the URL.</param>
+		/// <returns>The parse results.</returns>
 		[HttpGet("parsewho")]
 		public async Task<ParseWhoResult> ParseWhoScreenshot([FromBody] ParseWhoModel model)
 		{
@@ -76,7 +84,7 @@ namespace RealmAspNet.Controllers
 			// get image
 			try
 			{
-				await using var resp = await _client.GetStreamAsync(uri);
+				await using var resp = await Constants.BaseClient.GetStreamAsync(uri);
 				image = new Bitmap(resp);
 			}
 			catch (Exception)
@@ -206,5 +214,80 @@ namespace RealmAspNet.Controllers
 			_logger.LogInformation(logStr.ToString());
 			return returnObj;
 		}
+
+		private readonly Dictionary<int, ParseJob> _currentParseJobs;
+		
+		
+		[HttpPost("parse")]
+		public async Task<IActionResult> StartParseJob([FromBody] NameListModel model)
+		{
+			_logger.LogInformation($"[StartParseJob] Received Input: {string.Join(", ", model.Names)}");
+			var id = _idx++;
+			_currentParseJobs.Add(id, new ParseJob
+			{
+				Finished = false,
+				Output = new List<PlayerData>(),
+				Completed = new List<string>(),
+				Failed = new List<string>(),
+				Input = model.Names.ToList()
+			});
+			
+			var nameQuery = model.Names.Select(PlayerScraper.ScrapePlayerProfileAsync).ToList();
+			while (nameQuery.Any())
+			{
+				var finishedTask = await Task.WhenAny(nameQuery);
+				nameQuery.Remove(finishedTask);
+				var result = await finishedTask;
+				
+				if (result.ResultCode != ResultCode.Success) 
+					_currentParseJobs[id].Failed.Add(result.Name);
+				else
+				{
+					_currentParseJobs[id].Output.Add(result);
+					_currentParseJobs[id].Completed.Add(result.Name);
+				}
+			}
+			
+			return Ok(new {id});
+		}
+
+		[HttpGet("parse/{id}")]
+		public IActionResult GetParseStatus(int id)
+		{
+			_logger.LogInformation($"[GetParseStatus] Received ID: {id}");
+			if (_currentParseJobs.TryGetValue(id, out var job))
+			{
+				if (job.Input.Count == job.Completed.Count + job.Failed.Count)
+				{
+					job.Finished = true;
+					_currentParseJobs.Remove(id);
+					_logger.LogInformation("\tJob Completed.");
+					return Ok(job); 
+				}
+
+				_logger.LogInformation("\tNot Completed.");
+				return Ok(new
+				{
+					_currentParseJobs[id].Completed, 
+					_currentParseJobs[id].Failed, 
+					_currentParseJobs[id].Finished, 
+					_currentParseJobs[id].Input, 
+					Output = new List<int>()
+				});
+			}
+
+			_logger.LogInformation("\tNot Found.");
+			return NotFound();
+		}
+	}
+
+	class ParseJob
+	{
+		public bool Finished { get; set; }
+		public List<string> Input { get; set; }
+		public List<string> Completed { get; set; }
+		public List<string> Failed { get; set; } 
+		
+		public List<PlayerData> Output { get; set; }
 	}
 }

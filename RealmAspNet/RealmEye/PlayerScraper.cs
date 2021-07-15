@@ -59,7 +59,6 @@ namespace RealmAspNet.RealmEye
 				var proxy = await ProxyManager.GetNextProxy();
 				while (attempts < 2)
 				{
-					//using var page = await BaseClient.GetAsync(url);
 					IHttpRequest client = new HttpRequest(url)
 					{
 						Proxy = proxy,

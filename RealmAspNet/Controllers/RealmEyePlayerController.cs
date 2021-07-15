@@ -17,8 +17,8 @@ namespace RealmAspNet.Controllers
 	public class RealmEyePlayerController : ControllerBase
 	{
 		private readonly ILogger<RealmEyePlayerController> _logger;
-		private JsonSerializerOptions __defaultSerializationOption;
-		private JsonSerializerOptions _prettifySerializationOption;
+		private readonly JsonSerializerOptions _defaultSerializationOption;
+		private readonly JsonSerializerOptions _prettifySerializationOption;
 
 		/// <summary>
 		/// Creates a new controller for this API.
@@ -33,7 +33,7 @@ namespace RealmAspNet.Controllers
 				WriteIndented = true, 
 				PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 			};
-			__defaultSerializationOption = new JsonSerializerOptions
+			_defaultSerializationOption = new JsonSerializerOptions
 			{
 				IgnoreNullValues = true, 
 				PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -370,7 +370,7 @@ namespace RealmAspNet.Controllers
 		{
 			var res = queryCollection.ContainsKey("prettify")
 				? JsonSerializer.Serialize(resp, _prettifySerializationOption)
-				: JsonSerializer.Serialize(resp, __defaultSerializationOption);
+				: JsonSerializer.Serialize(resp, _defaultSerializationOption);
 			// This is needed since the serializer will encode some characters.
 			return Regex.Unescape(res);
 		}

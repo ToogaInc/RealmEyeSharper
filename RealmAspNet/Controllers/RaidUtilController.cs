@@ -62,7 +62,7 @@ namespace RealmAspNet.Controllers
 			Console.WriteLine(await reqRes.Content.ReadAsStringAsync());
 #endif
 
-			var json = JsonConvert.DeserializeObject<OCRResult>(await reqRes.Content.ReadAsStringAsync());
+			var json = JsonConvert.DeserializeObject<OcrSpaceResponse>(await reqRes.Content.ReadAsStringAsync());
 			if (json is null || json.OcrExitCode != 1)
 				return Problem("OCR Processing Failed.");
 

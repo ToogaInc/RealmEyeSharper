@@ -23,7 +23,7 @@ namespace RealmAspNet.Controllers
 	[ApiController]
 	public class RaidUtilController : ControllerBase
 	{
-		private int _idx;
+		private long _jobCount;
 		private readonly ILogger<RaidUtilController> _logger;
 		private readonly TesseractEngine _tesseractEngine;
 
@@ -33,10 +33,9 @@ namespace RealmAspNet.Controllers
 		/// <param name="logger">The logging object.</param>
 		public RaidUtilController(ILogger<RaidUtilController> logger)
 		{
-			_idx = 0;
+			_jobCount = 0;
 			_logger = logger;
 			_tesseractEngine = new TesseractEngine("./tessdata", "eng", EngineMode.Default);
-			_currentParseJobs = new Dictionary<int, ParseJob>();
 		}
 
 		/// <summary>
@@ -214,80 +213,66 @@ namespace RealmAspNet.Controllers
 			_logger.LogInformation(logStr.ToString());
 			return returnObj;
 		}
-
-		private readonly Dictionary<int, ParseJob> _currentParseJobs;
 		
-		
+		/// <summary>
+		/// Gets all the player's basic information (the player's RealmEye "homepage").
+		/// </summary>
+		/// <param name="names">The names.</param>
+		/// <returns>The response.</returns>
 		[HttpPost("parse")]
-		public async Task<IActionResult> StartParseJob([FromBody] NameListModel model)
+		public async Task<IActionResult> DoParseJob([FromBody] string[] names)
 		{
-			_logger.LogInformation($"[StartParseJob] Received Input: {string.Join(", ", model.Names)}");
-			var id = _idx++;
-			_currentParseJobs.Add(id, new ParseJob
+			var jobId = _jobCount++;
+			_logger.LogInformation($"[DoParseJob] Started Job {jobId}. Name Count: {names.Length}");
+			var stopwatch = Stopwatch.StartNew();
+			
+			var job = new ParseJob
 			{
+				JobId = jobId,
+				Elapsed = 0,
+				CompletedCount = 0,
+				FailedCount = 0,
 				Finished = false,
 				Output = new List<PlayerData>(),
 				Completed = new List<string>(),
 				Failed = new List<string>(),
-				Input = model.Names.ToList()
-			});
+				Input = names.ToList()
+			};
 			
-			var nameQuery = model.Names.Select(PlayerScraper.ScrapePlayerProfileAsync).ToList();
-			while (nameQuery.Any())
+			var profiles = await Task.WhenAll(names.Select(PlayerScraper.ScrapePlayerProfileAsync).ToList());
+			foreach (var profile in profiles)
 			{
-				var finishedTask = await Task.WhenAny(nameQuery);
-				nameQuery.Remove(finishedTask);
-				var result = await finishedTask;
+				if (profile.ResultCode is not ResultCode.Success)
+				{
+					job.Failed.Add(profile.Name);
+					continue; 
+				}
 				
-				if (result.ResultCode != ResultCode.Success) 
-					_currentParseJobs[id].Failed.Add(result.Name);
-				else
-				{
-					_currentParseJobs[id].Output.Add(result);
-					_currentParseJobs[id].Completed.Add(result.Name);
-				}
-			}
-			
-			return Ok(new {id});
-		}
-
-		[HttpGet("parse/{id}")]
-		public IActionResult GetParseStatus(int id)
-		{
-			_logger.LogInformation($"[GetParseStatus] Received ID: {id}");
-			if (_currentParseJobs.TryGetValue(id, out var job))
-			{
-				if (job.Input.Count == job.Completed.Count + job.Failed.Count)
-				{
-					job.Finished = true;
-					_currentParseJobs.Remove(id);
-					_logger.LogInformation("\tJob Completed.");
-					return Ok(job); 
-				}
-
-				_logger.LogInformation("\tNot Completed.");
-				return Ok(new
-				{
-					_currentParseJobs[id].Completed, 
-					_currentParseJobs[id].Failed, 
-					_currentParseJobs[id].Finished, 
-					_currentParseJobs[id].Input, 
-					Output = new List<int>()
-				});
+				job.Completed.Add(profile.Name);
+				job.Output.Add(profile);
 			}
 
-			_logger.LogInformation("\tNot Found.");
-			return NotFound();
+			stopwatch.Stop();
+			job.Elapsed = stopwatch.Elapsed.TotalSeconds;
+			job.CompletedCount = job.Completed.Count;
+			job.FailedCount = job.Failed.Count;
+			_logger.LogInformation($"[DoParseJob] Finished Job {jobId}. Time: {job.Elapsed} Seconds.\n" 
+			                       + $"\t- Completed: {job.CompletedCount}\n" 
+			                       + $"\t- Failed: {job.FailedCount} ({string.Join(", ", job.Failed)})");
+			return Ok(job);
 		}
 	}
 
 	class ParseJob
 	{
+		public long JobId { get; set; }
+		public double Elapsed { get; set; }
 		public bool Finished { get; set; }
+		public int CompletedCount { get; set; }
+		public int FailedCount { get; set; }
 		public List<string> Input { get; set; }
 		public List<string> Completed { get; set; }
-		public List<string> Failed { get; set; } 
-		
+		public List<string> Failed { get; set; }
 		public List<PlayerData> Output { get; set; }
 	}
 }

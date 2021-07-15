@@ -15,35 +15,32 @@ namespace RealmAspNet.RealmEye
 		public const string RealmEyeBaseUrl = "https://www.realmeye.com";
 
 		public static HttpClient BaseClient;
-
-		public static HttpClient ProxyClient;
+		
 		public static IDictionary<int, ItemData> IdToItem;
 		public static IDictionary<string, ItemData> NameToItem;
 
 		public static IConfiguration Configuration;
 
 		public static ProxyManager ProxyManager;
-		
+
+		/// <summary>
+		/// Initializes all necessary constants.
+		/// </summary>
 		public static void InitConstants()
 		{
-			ProxyClient = new HttpClient(new HttpClientHandler
-			{
-				AllowAutoRedirect = true
-			});
-			ProxyClient.DefaultRequestHeaders.Add("Authorization", $"Token {Configuration["proxy_key"]}");
+			// Get all proxies.
+			ProxyManager = new ProxyManager(Configuration["proxy_api"]);
+			Task.Run(async () => await ProxyManager.GetProxies());
 			
-			ProxyManager = new ProxyManager();
-			var ct = ProxyManager.GetProxies().Result;
-			Console.WriteLine(ct);
+			// Initialize the client and make initial request for definitions.
 			BaseClient = new HttpClient(new HttpClientHandler
 			{
 				AllowAutoRedirect = true
 			});
-
 			BaseClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 			(IdToItem, NameToItem) = ItemDefinitionScraper.GetDefinitions().Result;
 			
-			
+			// Start time to update definitions every hour.
 			using var timer = new Timer
 			{
 				AutoReset = true,

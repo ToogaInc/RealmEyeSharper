@@ -13,6 +13,7 @@ using HtmlAgilityPack;
 using PlainHttp;
 using RealmAspNet.RealmEye.Definitions;
 using RealmAspNet.RealmEye.Definitions.Player;
+using RealmAspNet.RealmEye.Proxy;
 using ScrapySharp.Extensions;
 using static RealmAspNet.RealmEye.Constants;
 
@@ -32,6 +33,16 @@ namespace RealmAspNet.RealmEye
 		private const string GuildHistorySegment = "guild-history-of-player";
 
 		#endregion
+
+#if USE_PROXY
+		/// <summary>
+		/// A static constructor to set the factory to the custom one we defined.
+		/// </summary>
+		static PlayerScraper()
+		{
+			HttpRequest.HttpClientFactory = new ProxyHttpClientFactory();
+		}
+#endif
 
 		/// <summary>
 		/// Whether the profile is private or not.
@@ -56,7 +67,7 @@ namespace RealmAspNet.RealmEye
 			while (limit-- > 0)
 			{
 				var attempts = 0;
-				var proxy = await ProxyManager.GetNextProxy();
+				var proxy = await Constants.ProxyManager.GetNextProxy();
 				while (attempts < 2)
 				{
 					IHttpRequest client = new HttpRequest(url)
@@ -66,7 +77,7 @@ namespace RealmAspNet.RealmEye
 						{
 							{"User-Agent", RandomUserAgent.RandomUa.RandomUserAgent}
 						},
-						Method = HttpMethod.Get
+						Method = HttpMethod.Get,
 					};
 					var page = await client.SendAsync();
 					if (!page.Message.IsSuccessStatusCode)
@@ -75,13 +86,14 @@ namespace RealmAspNet.RealmEye
 						continue;
 					}
 
-					ProxyManager.AddProxy(proxy);
+					Constants.ProxyManager.AddProxy(proxy);
 					var doc = new HtmlDocument();
 					doc.LoadHtml(page.Body);
 					return doc;
 				}
 
-				await ProxyManager.ReplaceProxy(proxy);
+				await Constants.ProxyManager.RemoveProxy(proxy);
+				(HttpRequest.HttpClientFactory as ProxyHttpClientFactory)?.DeleteProxiedClient(proxy);
 			}
 
 			return null;

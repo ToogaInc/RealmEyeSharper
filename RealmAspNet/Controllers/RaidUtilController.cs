@@ -39,14 +39,14 @@ namespace RealmAspNet.Controllers
 
 		/// <summary>
 		/// Parses a /who screenshot and gets all the player's basic information (the player's RealmEye "homepage").
+		/// Uses OCR.space's OCR API to get text from a /who screenshot.
 		/// </summary>
 		/// <param name="model">The model. This should contain an URL.</param>
 		/// <returns>The parse results.</returns>
 		[HttpPost("img/")]
-		public async Task<IActionResult> ParseImage([FromBody] ParseImgModel model)
+		public async Task<IActionResult> ParseWhoScreenshotAndGetDataAsync([FromBody] ParseImgModel model)
 		{
-			Stopwatch stopwatch = Stopwatch.StartNew();
-
+			var stopwatch = Stopwatch.StartNew();
 #if DEBUG
 			Console.WriteLine("[ParseImg] Sending Image to OCR Endpoint.");
 #endif
@@ -59,10 +59,6 @@ namespace RealmAspNet.Controllers
 				new("OCREngine", "2")
 			});
 			using var reqRes = await Constants.OCRClient.PostAsync("https://api.ocr.space/parse/image", formContent);
-
-#if DEBUG
-			Console.WriteLine(await reqRes.Content.ReadAsStringAsync());
-#endif
 
 			var json = JsonConvert.DeserializeObject<OcrSpaceResponse>(await reqRes.Content.ReadAsStringAsync());
 			if (json is null || json.OcrExitCode != 1)
@@ -122,11 +118,11 @@ namespace RealmAspNet.Controllers
 				return Problem("No players detected!");
 
 			stopwatch.Stop();
-
-			ParseJob res = await DoParseJob(players.ToArray());
-
-			res.Elapsed = res.Elapsed + stopwatch.Elapsed.TotalSeconds;
-
+			_logger.LogInformation(
+				$"[ParseImg] /who Parsing Successful. Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
+			);
+			var res = await SendConcurrentRealmEyeRequestsAsync(players.ToArray());
+			res.Elapsed += stopwatch.Elapsed.TotalSeconds;
 			return Ok(res);
 		}
 
@@ -137,16 +133,22 @@ namespace RealmAspNet.Controllers
 		/// <param name="names">The names.</param>
 		/// <returns>The response.</returns>
 		[HttpPost]
-		public async Task<IActionResult> ParseJob([FromBody] string[] names)
-		{
-			return Ok(await DoParseJob(names));
-		}
-		
-		private async Task<ParseJob> DoParseJob(string[] names){
-			var jobId = _jobCount++;
-			_logger.LogInformation($"[DoParseJob] Started Job {jobId}. Name Count: {names.Length}");
-			var stopwatch = Stopwatch.StartNew();
+		public async Task<IActionResult> RequestMultipleRealmEyeProfilesAsync([FromBody] string[] names)
+			=> Ok(await SendConcurrentRealmEyeRequestsAsync(names));
 
+		/// <summary>
+		/// Sends multiple RealmEye requests.
+		/// </summary>
+		/// <param name="names">The names to get data for.</param>
+		/// <returns>The job result.</returns>
+		private async Task<ParseJob> SendConcurrentRealmEyeRequestsAsync(string[] names)
+		{
+			var jobId = _jobCount++;
+			_logger.LogInformation(
+				$"[SendConcurrentRealmEyeRequests] Started Job {jobId}. Name Count: {names.Length}"
+			);
+			
+			var stopwatch = Stopwatch.StartNew();
 			var job = new ParseJob
 			{
 				JobId = jobId,
@@ -177,14 +179,16 @@ namespace RealmAspNet.Controllers
 			job.Elapsed = stopwatch.Elapsed.TotalSeconds;
 			job.CompletedCount = job.Completed.Count;
 			job.FailedCount = job.Failed.Count;
-			_logger.LogInformation($"[DoParseJob] Finished Job {jobId}. Time: {job.Elapsed} Seconds.\n"
-			                       + $"\t- Completed: {job.CompletedCount}\n"
-			                       + $"\t- Failed: {job.FailedCount} ({string.Join(", ", job.Failed)})");
 
+			_logger.LogInformation(
+				$"[SendConcurrentRealmEyeRequests] Finished RE Job {jobId}. Time: {job.Elapsed} Seconds.\n"
+				+ $"\t- Completed: {job.CompletedCount}\n"
+				+ $"\t- Failed: {job.FailedCount} ({string.Join(", ", job.Failed)})"
+			);
 			return job;
 		}
 	}
-	
+
 
 	internal class ParseJob
 	{

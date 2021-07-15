@@ -11,17 +11,6 @@ namespace RealmAspNet.RealmEye.Proxy
 	public class ProxyManager
 	{
 		private static HttpClient _proxyClient;
-
-		static ProxyManager()
-		{
-			_proxyClient = new HttpClient(new HttpClientHandler
-			{
-				AllowAutoRedirect = true
-			});
-			_proxyClient.DefaultRequestHeaders.Add("Authorization", $"Token {Constants.Configuration["proxy_key"]}");
-		}
-
-
 		private readonly Queue<Uri> _proxies;
 		private readonly string _apiKey;
 
@@ -33,6 +22,15 @@ namespace RealmAspNet.RealmEye.Proxy
 		{
 			_proxies = new Queue<Uri>();
 			_apiKey = apiKey;
+
+			if (apiKey == string.Empty) 
+				return;
+			
+			_proxyClient = new HttpClient(new HttpClientHandler
+			{
+				AllowAutoRedirect = true
+			});
+			_proxyClient.DefaultRequestHeaders.Add("Authorization", $"Token {apiKey}");
 		}
 
 		/// <summary>

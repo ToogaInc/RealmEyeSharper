@@ -33,9 +33,9 @@ namespace RealmAspNet.RealmEye
 			Rand = new Random();
 
 			// Get all proxies.
-			ProxyManager = new ProxyManager(Configuration["proxy_api"]);
+			ProxyManager = new ProxyManager(Configuration["ProxyApiKey"] ?? string.Empty);
 			Task.Run(async () => await ProxyManager.GetProxies());
-
+			
 			// Initialize the client and make initial request for definitions.
 			BaseClient = new HttpClient(new HttpClientHandler
 			{

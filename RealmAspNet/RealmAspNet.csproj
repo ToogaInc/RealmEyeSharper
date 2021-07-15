@@ -3,9 +3,11 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <Authors>Edward Wang</Authors>
-    <Company />
+    <Company>RealmSharper</Company>
     <UserSecretsId>205c5f72-c975-4cb1-9fcc-adc56b9db360</UserSecretsId>
     <LangVersion>9</LangVersion>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -13,7 +15,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Colourful" Version="3.0.0-beta2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="PlainHttp" Version="1.2.0" />
     <PackageReference Include="ScrapySharp" Version="3.0.0" />

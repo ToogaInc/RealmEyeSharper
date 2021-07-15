@@ -91,7 +91,7 @@ namespace RealmAspNet.Controllers
 #endif
                 }
                 else if (left != -1 &&
-                         left - 4 < firstWord.Left && firstWord.Left < left + 4 &&
+                         left - 8 < firstWord.Left && firstWord.Left < left + 8 &&
                          firstWord.Top >= top)
                 {
 #if DEBUG

@@ -14,15 +14,17 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="logger">The logging object.</param>
 		public UtilityController(ILogger<UtilityController> logger)
-		{
-			_logger = logger;
-		}
+			=> _logger = logger;
 
+		/// <summary>
+		/// Checks if the API is online.
+		/// </summary>
+		/// <returns>Always returns an object with the Online member being true.</returns>
 		[HttpGet("online")]
-		public object GetStatus()
+		public IActionResult GetStatus()
 		{
 			_logger.LogInformation("Tested Online Status");
-			return new { Online = true };
+			return Ok(new { Online = true });
 		}
 	}
 }

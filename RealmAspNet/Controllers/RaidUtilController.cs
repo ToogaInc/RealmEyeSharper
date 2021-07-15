@@ -1,16 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable PropertyCanBeMadeInitOnly.Global
+// ReSharper disable CollectionNeverQueried.Global
+
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Colourful;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
+using RealmAspNet.Definitions;
 using RealmAspNet.Models;
-using Tesseract;
-using ImageFormat = System.Drawing.Imaging.ImageFormat;
+using RealmAspNet.RealmEye;
+using RealmAspNet.RealmEye.Definitions;
+using RealmAspNet.RealmEye.Definitions.Player;
 
 namespace RealmAspNet.Controllers
 {
@@ -19,8 +25,7 @@ namespace RealmAspNet.Controllers
 	public class RaidUtilController : ControllerBase
 	{
 		private readonly ILogger<RaidUtilController> _logger;
-		private readonly TesseractEngine _tesseractEngine;
-		private readonly HttpClient _client; 
+		private int _jobCount;
 
 		/// <summary>
 		/// Creates a new controller for this API.
@@ -28,119 +33,177 @@ namespace RealmAspNet.Controllers
 		/// <param name="logger">The logging object.</param>
 		public RaidUtilController(ILogger<RaidUtilController> logger)
 		{
+			_jobCount = 0;
 			_logger = logger;
-			_tesseractEngine = new TesseractEngine("./tessdata", "eng");
-			_client = new HttpClient();
 		}
 
-		[HttpGet("parsewho")]
-		public async Task<string[]> ParseWhoScreenshot([FromBody] ParseWhoModel model)
+		/// <summary>
+		/// Parses a /who screenshot and gets all the player's basic information (the player's RealmEye "homepage").
+		/// Uses OCR.space's OCR API to get text from a /who screenshot.
+		/// </summary>
+		/// <param name="model">The model. This should contain an URL.</param>
+		/// <returns>The parse results.</returns>
+		[HttpPost("parseWho")]
+		public async Task<IActionResult> ParseWhoScreenshotAndGetDataAsync([FromBody] ParseImgModel model)
 		{
-			var uri = Uri.TryCreate(model.Url, UriKind.Absolute, out var uriRes)
-			          && (uriRes.Scheme == Uri.UriSchemeHttp || uriRes.Scheme == Uri.UriSchemeHttps)
-				? uriRes
-				: null;
+			var stopwatch = Stopwatch.StartNew();
+#if DEBUG
+			Console.WriteLine("[ParseImg] Sending Image to OCR Endpoint.");
+#endif
 
-			_logger.LogInformation($"ParseWho Executed. URL: {model.Url}");
-			if (uri == null)
-				return Array.Empty<string>();
-
-			Bitmap image;
-
-			// get image
-			try
+			var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
 			{
-				await using var resp = await _client.GetStreamAsync(uri);
-				image = new Bitmap(resp);
-			}
-			catch (Exception)
+				new("url", model.Url),
+				new("isOverlayRequired", "true"),
+				new("scale", "false"),
+				new("OCREngine", "2")
+			});
+			using var reqRes = await Constants.OCRClient.PostAsync("https://api.ocr.space/parse/image", formContent);
+
+			var json = JsonConvert.DeserializeObject<OcrSpaceResponse>(await reqRes.Content.ReadAsStringAsync());
+			if (json is null || json.OcrExitCode != 1)
+				return Problem("OCR Processing Failed.");
+
+			var parsePlayers = new Func<string, List<string>>(str =>
 			{
-				return Array.Empty<string>();
-			}
+				if (str.Contains(":"))
+					str = str[(str.IndexOf(":", StringComparison.Ordinal) + 1)..];
+
+				var split = str.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+				for (var i = 0; i < split.Count; i++)
+					split[i] = split[i].Replace(" ", "").Replace("0", "o");
+
+#if DEBUG
+				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", split)}");
+#endif
+
+				return split;
+			});
 
 
-			// this is a slight shade of yellow but divide each value by 255
-			var baseYellow = new RGBColor(0.8928976034858388, 0.9003921568627451, 0.04435729847494554);
-			var converter = new ConverterBuilder()
-				.FromRGB()
-				.ToLab()
-				.Build();
-			for (var x = 0; x < image.Width; ++x)
+			double left = -1;
+			double top = -1;
+			var players = new List<string>();
+
+			foreach (var line in json.ParsedResults[0].TextOverlay.Lines)
 			{
-				for (var y = 0; y < image.Height; ++y)
+				var firstWord = line.Words[0];
+
+				if (line.LineText.Contains("Players Online", StringComparison.OrdinalIgnoreCase))
 				{
-					var pixel = image.GetPixel(x, y);
-					var rgbColor = new RGBColor(pixel.R / 255.0, pixel.G / 255.0, pixel.B / 255.0);
-					var labColorOfBaseYellow = converter.Convert(baseYellow);
-					var labColorOfPixel = converter.Convert(rgbColor);
-					var deltaE = new CIEDE2000ColorDifference()
-						.ComputeDifference(labColorOfBaseYellow, labColorOfPixel);
+					if ((int) left != -1)
+						players.Clear();
 
-					image.SetPixel(x, y, deltaE < 15 ? Color.Black : Color.White);
+					left = firstWord.Left;
+					top = firstWord.Top;
+					players.AddRange(parsePlayers(line.LineText));
+#if DEBUG
+					Console.WriteLine($"[ParseImg:Bounds] Left: {left}, Top: {top}");
+#endif
+				}
+				else if ((int) left != -1
+				         && left - 8 < firstWord.Left
+				         && firstWord.Left < left + 8
+				         && firstWord.Top >= top)
+				{
+#if DEBUG
+					Console.WriteLine($"[ParseImg:Line] Testing Line: {line.LineText}");
+#endif
+					if (Regex.IsMatch(line.LineText, "^[a-zA-Z, 0]+"))
+						players.AddRange(parsePlayers(line.LineText));
 				}
 			}
 
-			await using var anotherStream = new MemoryStream();
-			image.Save(anotherStream, ImageFormat.Png);
-			using var page = _tesseractEngine.Process(Pix.LoadFromMemory(anotherStream.ToArray()));
-			var textArr = page.GetText().Split("\n")
-				.Select(x => x.Trim())
-				.ToArray();
+			if (players.Count == 0)
+				return Problem("No players detected!");
 
-			var index = -1;
-			for (var i = 0; i < textArr.Length; ++i)
-			{
-				if (!textArr[i].ToLower().StartsWith("players online")
-					|| !textArr[i].ToLower().Contains("):"))
-					continue;
-				index = i;
-				break;
-			}
+			stopwatch.Stop();
+			_logger.LogInformation(
+				$"[ParseImg] /who Parsing Successful. Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
+			);
 
-			if (index == -1)
-				return Array.Empty<string>();
-
-			var nameArr = new HashSet<string>();
-			var firstLine = textArr[index].Split("):")[1].Trim();
-			var peopleInFirstLine = firstLine.Split('.', ',')
-				.Select(x => x.Trim())
-				.Where(x => x != string.Empty)
-				.ToArray();
-
-			foreach (var name in peopleInFirstLine)
-				nameArr.Add(name.Replace('0', 'O').Replace('1', 'I'));
-
-			var emptyLineSuccession = 0;
-			for (var i = index + 1; i < textArr.Length; ++i)
-			{
-				if (string.IsNullOrEmpty(textArr[i])
-					|| !char.IsLetter(textArr[i][0]))
-				{
-					++emptyLineSuccession;
-					continue;
-				}
-
-				if (emptyLineSuccession >= 2)
-					break;
-
-				var peopleInThisLine = textArr[i].Split('.', ',')
-					.Select(x => x.Trim())
-					.Where(x => x != string.Empty)
-					.ToArray();
-
-				if (peopleInThisLine.Length == 0)
-				{
-					++emptyLineSuccession;
-					continue;
-				}
-
-				emptyLineSuccession = 0;
-
-				foreach (var name in peopleInThisLine)
-					nameArr.Add(name.Replace('0', 'O').Replace('1', 'I'));
-			}
-
-			return nameArr.ToArray();
+			if (!model.GetRealmEyeData ?? true)
+				return Ok(players);
+			
+			var res = await SendConcurrentRealmEyeRequestsAsync(players.ToArray());
+			res.Elapsed += stopwatch.Elapsed.TotalSeconds;
+			return Ok(res);
 		}
+
+
+		/// <summary>
+		/// Gets all the player's basic information (the player's RealmEye "homepage").
+		/// </summary>
+		/// <param name="names">The names.</param>
+		/// <returns>The response.</returns>
+		[HttpPost("parseNamesForREProfiles")]
+		public async Task<IActionResult> RequestMultipleRealmEyeProfilesAsync([FromBody] string[] names)
+			=> Ok(await SendConcurrentRealmEyeRequestsAsync(names));
+
+		/// <summary>
+		/// Sends multiple RealmEye requests.
+		/// </summary>
+		/// <param name="names">The names to get data for.</param>
+		/// <returns>The job result.</returns>
+		private async Task<ParseJob> SendConcurrentRealmEyeRequestsAsync(string[] names)
+		{
+			var jobId = _jobCount++;
+			_logger.LogInformation(
+				$"[SendConcurrentRealmEyeRequests] Started Job {jobId}. Name Count: {names.Length}"
+			);
+			
+			var stopwatch = Stopwatch.StartNew();
+			var job = new ParseJob
+			{
+				JobId = jobId,
+				Elapsed = 0,
+				CompletedCount = 0,
+				FailedCount = 0,
+				Finished = false,
+				Output = new List<PlayerData>(),
+				Completed = new List<string>(),
+				Failed = new List<string>(),
+				Input = names.ToList()
+			};
+
+			var profiles = await Task.WhenAll(names.Select(PlayerScraper.ScrapePlayerProfileAsync).ToList());
+			foreach (var profile in profiles)
+			{
+				if (profile.ResultCode is not ResultCode.Success)
+				{
+					job.Failed.Add(profile.Name);
+					continue;
+				}
+
+				job.Completed.Add(profile.Name);
+				job.Output.Add(profile);
+			}
+
+			stopwatch.Stop();
+			job.Elapsed = stopwatch.Elapsed.TotalSeconds;
+			job.CompletedCount = job.Completed.Count;
+			job.FailedCount = job.Failed.Count;
+
+			_logger.LogInformation(
+				$"[SendConcurrentRealmEyeRequests] Finished RE Job {jobId}. Time: {job.Elapsed} Seconds.\n"
+				+ $"\t- Completed: {job.CompletedCount}\n"
+				+ $"\t- Failed: {job.FailedCount} ({string.Join(", ", job.Failed)})"
+			);
+			return job;
+		}
+	}
+
+
+	internal class ParseJob
+	{
+		public long JobId { get; set; }
+		public double Elapsed { get; set; }
+		public bool Finished { get; set; }
+		public int CompletedCount { get; set; }
+		public int FailedCount { get; set; }
+		public List<string> Input { get; set; }
+		public List<string> Completed { get; set; }
+		public List<string> Failed { get; set; }
+		public List<PlayerData> Output { get; set; }
 	}
 }

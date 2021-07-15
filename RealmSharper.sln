@@ -3,15 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30611.23
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealmSharper", "RealmSharper\RealmSharper.csproj", "{F04BB245-E416-4C60-9D8D-F7E5AE2625B8}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ScraperTest", "ScraperTest\ScraperTest.csproj", "{E7000EBB-5285-4D22-A6B6-F4F3909DEC1D}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RealmAspNet", "RealmAspNet\RealmAspNet.csproj", "{4943662A-DD33-4E34-9769-54421CC34B3B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C44B77EC-44E3-4ACE-B4BE-A167151D1F8C}"
 	ProjectSection(SolutionItems) = preProject
+		LICENSE.txt = LICENSE.txt
 		README.md = README.md
+		.gitignore = .gitignore
 	EndProjectSection
 EndProject
 Global
@@ -20,14 +18,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F04BB245-E416-4C60-9D8D-F7E5AE2625B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F04BB245-E416-4C60-9D8D-F7E5AE2625B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F04BB245-E416-4C60-9D8D-F7E5AE2625B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F04BB245-E416-4C60-9D8D-F7E5AE2625B8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E7000EBB-5285-4D22-A6B6-F4F3909DEC1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E7000EBB-5285-4D22-A6B6-F4F3909DEC1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E7000EBB-5285-4D22-A6B6-F4F3909DEC1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E7000EBB-5285-4D22-A6B6-F4F3909DEC1D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4943662A-DD33-4E34-9769-54421CC34B3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4943662A-DD33-4E34-9769-54421CC34B3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4943662A-DD33-4E34-9769-54421CC34B3B}.Release|Any CPU.ActiveCfg = Release|Any CPU

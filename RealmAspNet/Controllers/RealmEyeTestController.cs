@@ -18,18 +18,26 @@ namespace RealmAspNet.Controllers
 		public RealmEyeTestController(ILogger<RealmEyeTestController> logger)
 			=> _logger = logger;
 
+		/// <summary>
+		/// Scrapes RealmEye's `definitions.js` for item data. 
+		/// </summary>
+		/// <returns>An array of objects where the item ID is the key and the item information is the value.</returns>
 		[HttpGet("idDict")]
-		public IDictionary<int, ItemData> GetIdToObjDefinitionsAsync()
+		public IActionResult GetIdToObjDefinitionsAsync()
 		{
 			_logger.Log(LogLevel.Information, $"[GetIdToObj] Requested {Constants.NameToItem.Count} Entries");
-			return Constants.IdToItem;
+			return Ok(Constants.IdToItem);
 		}
 		
+		/// <summary>
+		/// Scrapes RealmEye's `definitions.js` for item data. 
+		/// </summary>
+		/// <returns>An array of objects where the item name is the key and the item information is the value.</returns>
 		[HttpGet("nameDict")]
-		public IDictionary<string, ItemData> GetNameToObjDefinitionsAsync()
+		public IActionResult GetNameToObjDefinitionsAsync()
 		{
 			_logger.Log(LogLevel.Information, $"[GetNameToObj] Requested {Constants.NameToItem.Count} Entries");
-			return Constants.NameToItem;
+			return Ok(Constants.NameToItem);
 		}
 	}
 }

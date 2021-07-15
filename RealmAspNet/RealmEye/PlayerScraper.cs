@@ -75,7 +75,7 @@ namespace RealmAspNet.RealmEye
 						Proxy = proxy,
 						Headers = new Dictionary<string, string>
 						{
-							{"User-Agent", RandomUserAgent.RandomUa.RandomUserAgent}
+							{"User-Agent", UserAgents[Rand.Next(UserAgents.Count)]}
 						},
 						Method = HttpMethod.Get,
 					};

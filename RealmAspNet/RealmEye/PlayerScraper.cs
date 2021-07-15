@@ -1,13 +1,16 @@
-﻿#nullable enable
+﻿#define USE_PROXY
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using HtmlAgilityPack;
+using PlainHttp;
 using RealmAspNet.RealmEye.Definitions;
 using RealmAspNet.RealmEye.Definitions.Player;
 using ScrapySharp.Extensions;
@@ -48,9 +51,45 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The HtmlDocument object.</returns>
 		private static async Task<HtmlDocument?> GetDocument(string url)
 		{
+#if USE_PROXY
+			var limit = 100;
+			while (limit-- > 0)
+			{
+				var attempts = 0;
+				var proxy = await ProxyManager.GetNextProxy();
+				while (attempts < 2)
+				{
+					//using var page = await BaseClient.GetAsync(url);
+					IHttpRequest client = new HttpRequest(url)
+					{
+						Proxy = proxy,
+						Headers = new Dictionary<string, string>
+						{
+							{"User-Agent", RandomUserAgent.RandomUa.RandomUserAgent}
+						},
+						Method = HttpMethod.Get
+					};
+					var page = await client.SendAsync();
+					if (!page.Message.IsSuccessStatusCode)
+					{
+						attempts++;
+						continue;
+					}
+
+					ProxyManager.AddProxy(proxy);
+					var doc = new HtmlDocument();
+					doc.LoadHtml(page.Body);
+					return doc;
+				}
+
+				await ProxyManager.ReplaceProxy(proxy);
+			}
+
+			return null;
+#else
 			try
 			{
-				using var page = await Client.GetAsync(url);
+				using var page = await BaseClient.GetAsync(url);
 				var doc = new HtmlDocument();
 				doc.LoadHtml(await page.Content.ReadAsStringAsync());
 				return doc;
@@ -60,6 +99,7 @@ namespace RealmAspNet.RealmEye
 				await Console.Error.WriteLineAsync(e.ToString());
 				return null;
 			}
+#endif
 		}
 
 		/// <summary>

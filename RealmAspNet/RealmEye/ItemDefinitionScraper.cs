@@ -26,7 +26,7 @@ namespace RealmAspNet.RealmEye
 				Method = HttpMethod.Get
 			};
 
-			using var httpResponse = await Client.SendAsync(httpMessage);
+			using var httpResponse = await BaseClient.SendAsync(httpMessage);
 			var content = await httpResponse.Content.ReadAsStringAsync();
 			// remove "items={" and the end "]};" 
 			// then split

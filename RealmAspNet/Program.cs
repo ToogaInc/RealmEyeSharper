@@ -8,7 +8,6 @@ namespace RealmAspNet
 	{
 		public static void Main(string[] args)
 		{
-			Constants.InitConstants();
 			CreateHostBuilder(args).Build().Run();
 		}
 

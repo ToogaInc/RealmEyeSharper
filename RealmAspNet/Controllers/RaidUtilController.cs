@@ -42,7 +42,7 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="model">The model. This should contain an URL.</param>
 		/// <returns>The parse results.</returns>
-		[HttpGet("img/")]
+		[HttpPost("img/")]
 		public async Task<IActionResult> ParseImage([FromBody] ParseImgModel model)
 		{
 #if DEBUG

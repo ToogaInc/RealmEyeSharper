@@ -45,6 +45,8 @@ namespace RealmAspNet.Controllers
 		[HttpPost("img/")]
 		public async Task<IActionResult> ParseImage([FromBody] ParseImgModel model)
 		{
+			Stopwatch stopwatch = Stopwatch.StartNew();
+
 #if DEBUG
 			Console.WriteLine("[ParseImg] Sending Image to OCR Endpoint.");
 #endif
@@ -119,7 +121,13 @@ namespace RealmAspNet.Controllers
 			if (players.Count == 0)
 				return Problem("No players detected!");
 
-			return await DoParseJob(players.ToArray());
+			stopwatch.Stop();
+
+			ParseJob res = await DoParseJob(players.ToArray());
+
+			res.Elapsed = res.Elapsed + stopwatch.Elapsed.TotalSeconds;
+
+			return Ok(res);
 		}
 
 
@@ -129,8 +137,12 @@ namespace RealmAspNet.Controllers
 		/// <param name="names">The names.</param>
 		/// <returns>The response.</returns>
 		[HttpPost]
-		public async Task<IActionResult> DoParseJob([FromBody] string[] names)
+		public async Task<IActionResult> ParseJob([FromBody] string[] names)
 		{
+			return Ok(await DoParseJob(names));
+		}
+		
+		private async Task<ParseJob> DoParseJob(string[] names){
 			var jobId = _jobCount++;
 			_logger.LogInformation($"[DoParseJob] Started Job {jobId}. Name Count: {names.Length}");
 			var stopwatch = Stopwatch.StartNew();
@@ -168,9 +180,11 @@ namespace RealmAspNet.Controllers
 			_logger.LogInformation($"[DoParseJob] Finished Job {jobId}. Time: {job.Elapsed} Seconds.\n"
 			                       + $"\t- Completed: {job.CompletedCount}\n"
 			                       + $"\t- Failed: {job.FailedCount} ({string.Join(", ", job.Failed)})");
-			return Ok(job);
+
+			return job;
 		}
 	}
+	
 
 	internal class ParseJob
 	{

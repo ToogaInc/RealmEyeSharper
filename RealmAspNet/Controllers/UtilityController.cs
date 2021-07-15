@@ -14,9 +14,7 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="logger">The logging object.</param>
 		public UtilityController(ILogger<UtilityController> logger)
-		{
-			_logger = logger;
-		}
+			=> _logger = logger;
 
 		/// <summary>
 		/// Checks if the API is online.

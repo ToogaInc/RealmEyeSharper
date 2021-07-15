@@ -20,41 +20,41 @@ Here, `{name}` represents the name of the player that you want to request data f
 
 | API Endpoint | Description |
 | ------------ | ----------- |
-| `GET api/realmeye/player/basics/{name}` | Gets basic player data.  |
-| `GET api/realmeye/player/petyard/{name}` | Gets the person's pet yard. |
-| `GET api/realmeye/player/graveyard/{name}/{amt?}` | Gets the person's graveyard information. Will get up to the 100 most recent entries. | 
-| `GET api/realmeye/player/graveyardsummary/{name}` | Gets the person's graveyard summary. | 
-| `GET api/realmeye/player/namehistory/{name}` | Gets the person's name history. | 
-| `GET api/realmeye/player/famehistory/{name}` | Gets the person's fame history. Not working at this time. |
-| `GET api/realmeye/player/guildhistory/{name}` | Gets the person's guild history. | 
-| `GET api/realmeye/player/rankhistory/{name}` | Gets the person's rank history. |
-| `GET api/realmeye/player/exaltations/{name}` | Gets the person's exaltations. |
+| `GET api/realmeye/player/basics?name={name}` | Gets basic player data.  |
+| `GET api/realmeye/player/petyard?name={name}` | Gets the person's pet yard. |
+| `GET api/realmeye/player/graveyard?name={name}/{amt?}` | Gets the person's graveyard information. Will get up to the 100 most recent entries. | 
+| `GET api/realmeye/player/graveyardsummary?name={name}` | Gets the person's graveyard summary. | 
+| `GET api/realmeye/player/namehistory?name={name}` | Gets the person's name history. |
+| `GET api/realmeye/player/guildhistory?name={name}` | Gets the person's guild history. | 
+| `GET api/realmeye/player/rankhistory?name={name}` | Gets the person's rank history. |
+| `GET api/realmeye/player/exaltations?name={name}` | Gets the person's exaltations. |
+
+### Get Multiple RealmEye Profiles Endpoint
+This endpoint is exactly the same as calling the `basic` endpoint, but this endpoint will accept an array of names.
+
+Endpoint: `POST api/raidutil/parseWho`
+
+In your request body, only include the array of names. 
+
+This endpoint requires the use of rotating proxies (since RealmEye has a rate limit). This API supports the use of [Webshare.io](https://webshare.io/), which is a **paid** service (the free service is insufficient due to RealmEye blocking proxies). 
 
 ### Parse Who Endpoint
-This endpoint will parse a __cropped__ `/who` screenshot. It will do some basic image processing before actually parsing it, though. 
+This endpoint will parse a __cropped__ `/who` screenshot.
 
-Endpoint: `GET api/raidutil/parsewho`
+Endpoint: `POST api/raidutil/parseNamesForREProfiles`
 
 You must include the following in your body when making a request to this endpoint:
-```js
+```
 {
-    Url: "link/to/image/with/cropped/who"
+    "Url": string,
+    "GetRealmEyeData": bool?
 }
 ```
+Here, `URL` is the URL to the image. This endpoint will return two things depending on the value of `GetRealmEyeData`.
+- If `GetRealmEyeData` is false or isn't included, then this endpoint will return an array of names that were parsed. 
+- Otherwise, this endpoint will return a JSON containing information like the RealmEye profiles corresponding to each name found in the screenshot.
 
-This will return a JSON that looks like:
-```
-{
-    "imageDownloadTime": number,
-    "imageProcessingTime": number,
-    "ocrRecognitionTime": number,
-    "whoResult": string[],
-    "rawOcrResult": string,
-    "count": number,
-    "code": string,
-    "issues": string
-}
-```
+The OCR parsing requires an [OCRSpace](https://ocr.space/) API key, which is free.
 
 ### Online Test
 Use this endpoint to test if the API is online.
@@ -69,9 +69,6 @@ This is guaranteed to return a JSON that looks like:
 ```
 
 If it wasn't clear enough, the idea is that if the API is online, then you would get a response. Otherwise, your HTTP client will throw some sort of an exception. In particular, this endpoint is useful if you want to check if the API is online *before* making any further requests.
-
-## Setup 
-Coming soon.
 
 ## Acknowledgements
 Inspired by Nightfirecat's [RealmEye API](https://github.com/Nightfirecat/RealmEye-API).

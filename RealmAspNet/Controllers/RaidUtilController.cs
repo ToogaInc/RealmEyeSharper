@@ -20,7 +20,7 @@ using RealmAspNet.RealmEye.Definitions.Player;
 
 namespace RealmAspNet.Controllers
 {
-	[Route("api/raidutil/parse")]
+	[Route("api/raidutil")]
 	[ApiController]
 	public class RaidUtilController : ControllerBase
 	{
@@ -43,7 +43,7 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="model">The model. This should contain an URL.</param>
 		/// <returns>The parse results.</returns>
-		[HttpPost("img/")]
+		[HttpPost("parseWho")]
 		public async Task<IActionResult> ParseWhoScreenshotAndGetDataAsync([FromBody] ParseImgModel model)
 		{
 			var stopwatch = Stopwatch.StartNew();
@@ -121,6 +121,10 @@ namespace RealmAspNet.Controllers
 			_logger.LogInformation(
 				$"[ParseImg] /who Parsing Successful. Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
 			);
+
+			if (!model.GetRealmEyeData ?? true)
+				return Ok(players);
+			
 			var res = await SendConcurrentRealmEyeRequestsAsync(players.ToArray());
 			res.Elapsed += stopwatch.Elapsed.TotalSeconds;
 			return Ok(res);
@@ -132,7 +136,7 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="names">The names.</param>
 		/// <returns>The response.</returns>
-		[HttpPost]
+		[HttpPost("parseNamesForREProfiles")]
 		public async Task<IActionResult> RequestMultipleRealmEyeProfilesAsync([FromBody] string[] names)
 			=> Ok(await SendConcurrentRealmEyeRequestsAsync(names));
 

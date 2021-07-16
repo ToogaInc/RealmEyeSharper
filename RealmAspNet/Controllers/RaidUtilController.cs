@@ -2,6 +2,7 @@
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 // ReSharper disable CollectionNeverQueried.Global
 
+#define NO_PRINT
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,6 +19,8 @@ using RealmAspNet.RealmEye;
 using RealmAspNet.RealmEye.Definitions;
 using RealmAspNet.RealmEye.Definitions.Player;
 
+// ReSharper disable SuggestBaseTypeForParameter
+
 namespace RealmAspNet.Controllers
 {
 	[Route("api/raidutil")]
@@ -25,16 +28,49 @@ namespace RealmAspNet.Controllers
 	public class RaidUtilController : ControllerBase
 	{
 		private readonly ILogger<RaidUtilController> _logger;
-		private int _jobCount;
-
+		private int _concurrJobId;
+		private int _apiReqJobId; 
+		
 		/// <summary>
 		/// Creates a new controller for this API.
 		/// </summary>
 		/// <param name="logger">The logging object.</param>
 		public RaidUtilController(ILogger<RaidUtilController> logger)
 		{
-			_jobCount = 0;
+			_concurrJobId = 0;
+			_apiReqJobId = 0;
 			_logger = logger;
+		}
+
+
+		/// <summary>
+		/// Parses a /who screenshot. Uses OCR.space's OCR API to get text from a /who screenshot.
+		/// </summary>
+		/// <param name="model">The model. This should contain an URL.</param>
+		/// <returns>The parse results.</returns>
+		[HttpPost("parseWhoOnly")]
+		public async Task<IActionResult> ParseWhoScreenshotAsync([FromBody] WhoParseOnlyModel model)
+		{
+			var jobId = _apiReqJobId++;
+			_logger.LogInformation(
+				$"[ParseImgWhoOnly] [ID {jobId}] Received Image URL for Parsing. URL: {model.Url}\n"
+				+ $"\t- Scaling: {model.Scale}"
+			);
+
+			var stopwatch = Stopwatch.StartNew();
+#if DEBUG && !NO_PRINT
+			Console.WriteLine("[ParseImgWhoOnly] Sending Image to OCR Endpoint.");
+#endif
+
+			// C# "true.toString()" returns "True" not "true"
+			var names = await ProcessImg(model.Url, model.Scale ? "true" : "false");
+
+			// If we're only interested in basic /who parsing, then run this and return.
+			_logger.LogInformation(
+				$"[ParseImgWhoOnly] [ID {jobId}] /who Parsing Successful. Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
+			);
+
+			return Ok(names);
 		}
 
 		/// <summary>
@@ -43,98 +79,51 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="model">The model. This should contain an URL.</param>
 		/// <returns>The parse results.</returns>
-		[HttpPost("parseWho")]
+		[HttpPost("parseWhoRealmEye")]
 		public async Task<IActionResult> ParseWhoScreenshotAndGetDataAsync([FromBody] ParseImgModel model)
 		{
+			var jobId = _apiReqJobId++;
+			_logger.LogInformation(
+				$"[ParseImgGetData] [ID {jobId}] Received Image URL for Parsing.\n"
+				+ $"\t- URL: {model.Url}\n"
+				+ $"\t- Simple Parse?: {model.SimpleParse ?? false}"
+			);
+
 			var stopwatch = Stopwatch.StartNew();
-#if DEBUG
+#if DEBUG && !NO_PRINT
 			Console.WriteLine("[ParseImg] Sending Image to OCR Endpoint.");
 #endif
-			
-			var parsePlayers = new Func<string, List<string>>(str =>
+
+			var unscaledTask = ProcessImg(model.Url, "false");
+
+			// If we're only interested in basic /who parsing and RE data, then run this and return.
+			if (model.SimpleParse ?? false)
 			{
-				if (str.Contains(":"))
-					str = str[(str.IndexOf(":", StringComparison.Ordinal) + 1)..];
+				var names = await unscaledTask;
+				if (names.Count == 0)
+					return Problem("No players detected!");
 
-				var split = str.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
-				for (var i = 0; i < split.Count; i++)
-					split[i] = split[i].Replace(" ", "").Replace("0", "o");
-
-#if DEBUG
-				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", split)}");
-#endif
-
-				return split;
-			});
-
-			async Task<List<string>> ProcessImg(string scale)
-			{
-				var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
-				{
-					new("url", model.Url),
-					new("isOverlayRequired", "true"),
-					new("scale", scale),
-					new("OCREngine", "2")
-				});
-				using var reqRes = await Constants.OCRClient.PostAsync("https://api.ocr.space/parse/image", formContent);
-
-#if DEBUG
-				Console.WriteLine(await reqRes.Content.ReadAsStringAsync());
-#endif
-
-				var json = JsonConvert.DeserializeObject<OcrSpaceResponse>(await reqRes.Content.ReadAsStringAsync());
-				if (json is null || json.OcrExitCode != 1)
-					return null;
-
-				double left = -1;
-				double top = -1;
-				var players = new List<string>();
-
-				foreach (var line in json.ParsedResults[0].TextOverlay.Lines)
-				{
-					var firstWord = line.Words[0];
-
-					if (line.LineText.Contains("Players Online", StringComparison.OrdinalIgnoreCase))
-					{
-						if ((int) left != -1)
-							players.Clear();
-
-						left = firstWord.Left;
-						top = firstWord.Top;
-						players.AddRange(parsePlayers(line.LineText));
-#if DEBUG
-						Console.WriteLine($"[ParseImg:Bounds] Left: {left}, Top: {top}");
-#endif
-					}
-					else if ((int) left != -1
-					         && left - 8 < firstWord.Left
-					         && firstWord.Left < left + 8
-					         && firstWord.Top >= top)
-					{
-#if DEBUG
-						Console.WriteLine($"[ParseImg:Line] Testing Line: {line.LineText}");
-#endif				
-						// Check if line is an output of /who
-						// lines should contain only a-z (OCR sometimes replaces o's with zeros too).
-						// lines should also contain at least one ',' (or only have 1 word)
-						if ((line.LineText.Contains(",") &&
-						     Regex.IsMatch(line.LineText, "^[a-zA-Z, 0]+")) ||
-						    line.Words.Count == 1)  
-							players.AddRange(parsePlayers(line.LineText));
-					}
-				}
-
-				return players;
+				var reReq = await SendConcurrentRealmEyeRequestsAsync(names.ToArray());
+				reReq.ElapsedSec = stopwatch.Elapsed.TotalSeconds;
+				_logger.LogInformation(
+					$"[ParseImgGetData:Simple] [ID {jobId}] /who Parsing + RE Data Request Successful.\n"
+					+ $"\t- Time: {reReq.ElapsedSec} Seconds."
+				);
+				return Ok(reReq);
 			}
 
-			var unscaledTask = ProcessImg("false");
-			var scaledTask = ProcessImg("true");
+			// Otherwise, we're going to do more advanced /who parsing and get RE data.
+			var scaledTask = ProcessImg(model.Url, "true");
 			var allNames = await Task.WhenAll(unscaledTask, scaledTask);
 
+			_logger.LogInformation(
+				$"[ParseImgGetData] [ID {jobId}] OCR Parse Completed in {stopwatch.Elapsed.TotalSeconds} Seconds."
+			);
+			
 			var unscaledPlayers = allNames[0];
 			var scaledPlayers = allNames[1];
-			
-#if DEBUG
+
+#if DEBUG && !NO_PRINT
 			Console.WriteLine("[ParseImg:Players] Player List (Common): " + 
 			                  String.Join(", ", unscaledPlayers));
 			Console.WriteLine("[ParseImg:Players] Player List (Diff.): " + 
@@ -142,11 +131,8 @@ namespace RealmAspNet.Controllers
 #endif
 
 			var unscaledRes = await SendConcurrentRealmEyeRequestsAsync(unscaledPlayers.ToArray());
-
-
 			Dictionary<string, string> fixedNames = new();
-			List<string> notFound = new();
-			
+			// Try to find the name in the unscaled.failed list that looks the closest in the scaled names.
 			foreach (var name in unscaledRes.Failed)
 			{
 				int minDist = 5;
@@ -159,19 +145,19 @@ namespace RealmAspNet.Controllers
 						minName = sName;
 						break;
 					}
+
 					if (dist < minDist)
 					{
 						minDist = dist;
-						minName = sName;	
+						minName = sName;
 					}
 				}
 
 				if (minName != null)
 					fixedNames.Add(name, minName);
-				else
-					notFound.Add(name);
 			}
 
+			// Send requests for the fixed names.
 			var fixedNamesRes = await SendConcurrentRealmEyeRequestsAsync(fixedNames.Values.ToArray());
 
 			var newInput = unscaledRes.Input.ToList();
@@ -185,7 +171,8 @@ namespace RealmAspNet.Controllers
 					newInput.Add(fixedNames[name]);
 				}
 			}
-			
+
+			// Update the return object appropriately.
 			unscaledRes.Input = newInput;
 			unscaledRes.Completed.AddRange(fixedNamesRes.Completed);
 			unscaledRes.CompletedCount = unscaledRes.Completed.Count;
@@ -194,17 +181,13 @@ namespace RealmAspNet.Controllers
 
 			if (unscaledRes.CompletedCount == 0)
 				return Problem("No players detected!");
-			
-			_logger.LogInformation(
-				$"[ParseImg] /who Parsing Successful. Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
-			);
-			
-			stopwatch.Stop();
-			unscaledRes.Elapsed = stopwatch.Elapsed.TotalSeconds;
-			
-			if (!model.GetRealmEyeData ?? true)
-				return Ok(unscaledPlayers);
 
+			_logger.LogInformation(
+				$"[ParseImgGetData] [ID {jobId}] /who Parsing Successful. Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
+			);
+
+			stopwatch.Stop();
+			unscaledRes.ElapsedSec = stopwatch.Elapsed.TotalSeconds;
 			return Ok(unscaledRes);
 		}
 
@@ -214,7 +197,7 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="names">The names.</param>
 		/// <returns>The response.</returns>
-		[HttpPost("parseNamesForREProfiles")]
+		[HttpPost("namesRealmEye")]
 		public async Task<IActionResult> RequestMultipleRealmEyeProfilesAsync([FromBody] string[] names)
 			=> Ok(await SendConcurrentRealmEyeRequestsAsync(names));
 
@@ -225,19 +208,18 @@ namespace RealmAspNet.Controllers
 		/// <returns>The job result.</returns>
 		private async Task<ParseJob> SendConcurrentRealmEyeRequestsAsync(string[] names)
 		{
-			var jobId = _jobCount++;
+			var jobId = _concurrJobId++;
 			_logger.LogInformation(
-				$"[SendConcurrentRealmEyeRequests] Started Job {jobId}. Name Count: {names.Length}"
+				$"[ConcurRealmEyeReq] [ID {jobId}] Started Job.\n"
+				+ $"\t- Name Count: {names.Length}"
 			);
-			
+
 			var stopwatch = Stopwatch.StartNew();
 			var job = new ParseJob
 			{
-				JobId = jobId,
-				Elapsed = 0,
+				ElapsedSec = 0,
 				CompletedCount = 0,
 				FailedCount = 0,
-				Finished = false,
 				Output = new List<PlayerData>(),
 				Completed = new List<string>(),
 				Failed = new List<string>(),
@@ -258,25 +240,107 @@ namespace RealmAspNet.Controllers
 			}
 
 			stopwatch.Stop();
-			job.Elapsed = stopwatch.Elapsed.TotalSeconds;
+			job.ElapsedSec = stopwatch.Elapsed.TotalSeconds;
 			job.CompletedCount = job.Completed.Count;
 			job.FailedCount = job.Failed.Count;
 
 			_logger.LogInformation(
-				$"[SendConcurrentRealmEyeRequests] Finished RE Job {jobId}. Time: {job.Elapsed} Seconds.\n"
+				$"[ConcurRealmEyeReq] [ID {jobId}] Finished Job.\n"
+				+ $"\t- Time: {job.ElapsedSec} Seconds.\n"
 				+ $"\t- Completed: {job.CompletedCount}\n"
 				+ $"\t- Failed: {job.FailedCount} ({string.Join(", ", job.Failed)})"
 			);
 			return job;
+		}
+
+		/// <summary>
+		/// Processes the specified image with the specified scale.
+		/// </summary>
+		/// <param name="imgUrl">The URL to the image.</param>
+		/// <param name="scale">Either "True" or "False"</param>
+		/// <returns>A list of names parsed.</returns>
+		private static async Task<List<string>> ProcessImg(string imgUrl, string scale)
+		{
+			var parsePlayers = new Func<string, List<string>>(str =>
+			{
+				if (str.Contains(":"))
+					str = str[(str.IndexOf(":", StringComparison.Ordinal) + 1)..];
+
+				var split = str.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
+				for (var i = 0; i < split.Count; i++)
+					split[i] = split[i].Replace(" ", "").Replace("0", "o");
+
+#if DEBUG && !NO_PRINT
+				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", split)}");
+#endif
+
+				return split;
+			});
+
+			var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+			{
+				new("url", imgUrl),
+				new("isOverlayRequired", "true"),
+				new("scale", scale),
+				new("OCREngine", "2")
+			});
+			using var reqRes =
+				await Constants.OCRClient.PostAsync("https://api.ocr.space/parse/image", formContent);
+
+#if DEBUG && !NO_PRINT
+				Console.WriteLine(await reqRes.Content.ReadAsStringAsync());
+#endif
+
+			var json = JsonConvert.DeserializeObject<OcrSpaceResponse>(await reqRes.Content.ReadAsStringAsync());
+			if (json is null || json.OcrExitCode != 1)
+				return null;
+
+			double left = -1;
+			double top = -1;
+			var players = new List<string>();
+
+			foreach (var line in json.ParsedResults[0].TextOverlay.Lines)
+			{
+				var firstWord = line.Words[0];
+
+				if (line.LineText.Contains("Players Online", StringComparison.OrdinalIgnoreCase))
+				{
+					if ((int) left != -1)
+						players.Clear();
+
+					left = firstWord.Left;
+					top = firstWord.Top;
+					players.AddRange(parsePlayers(line.LineText));
+#if DEBUG && !NO_PRINT
+						Console.WriteLine($"[ParseImg:Bounds] Left: {left}, Top: {top}");
+#endif
+				}
+				else if ((int) left != -1
+				         && left - 8 < firstWord.Left
+				         && firstWord.Left < left + 8
+				         && firstWord.Top >= top)
+				{
+#if DEBUG && !NO_PRINT
+						Console.WriteLine($"[ParseImg:Line] Testing Line: {line.LineText}");
+#endif
+					// Check if line is an output of /who
+					// lines should contain only a-z (OCR sometimes replaces o's with zeros too).
+					// lines should also contain at least one ',' (or only have 1 word)
+					if ((line.LineText.Contains(",") &&
+					     Regex.IsMatch(line.LineText, "^[a-zA-Z, 0]+")) ||
+					    line.Words.Count == 1)
+						players.AddRange(parsePlayers(line.LineText));
+				}
+			}
+
+			return players;
 		}
 	}
 
 
 	internal class ParseJob
 	{
-		public long JobId { get; set; }
-		public double Elapsed { get; set; }
-		public bool Finished { get; set; }
+		public double ElapsedSec { get; set; }
 		public int CompletedCount { get; set; }
 		public int FailedCount { get; set; }
 		public List<string> Input { get; set; }
@@ -284,8 +348,8 @@ namespace RealmAspNet.Controllers
 		public List<string> Failed { get; set; }
 		public List<PlayerData> Output { get; set; }
 	}
-	
-	internal class LevenshteinDistance
+
+	internal static class LevenshteinDistance
 	{
 		public static int Compute(string s, string t)
 		{
@@ -306,8 +370,13 @@ namespace RealmAspNet.Controllers
 			int[,] d = new int[n + 1, m + 1];
 
 			// initialize the top and right of the table to 0, 1, 2, ...
-			for (int i = 0; i <= n; d[i, 0] = i++);
-			for (int j = 1; j <= m; d[0, j] = j++);
+			for (int i = 0; i <= n; d[i, 0] = i++)
+			{
+			}
+
+			for (int j = 1; j <= m; d[0, j] = j++)
+			{
+			}
 
 			for (int i = 1; i <= n; i++)
 			{
@@ -320,8 +389,8 @@ namespace RealmAspNet.Controllers
 					d[i, j] = Math.Min(Math.Min(min1, min2), min3);
 				}
 			}
+
 			return d[n, m];
 		}
 	}
-	
 }

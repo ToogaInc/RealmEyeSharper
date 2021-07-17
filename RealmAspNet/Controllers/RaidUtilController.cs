@@ -2,6 +2,7 @@
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 // ReSharper disable CollectionNeverQueried.Global
 // ReSharper disable StringLiteralTypo
+// ReSharper disable SuggestBaseTypeForParameter
 
 #define NO_PRINT
 #define USE_ACTION_BLOCK
@@ -22,8 +23,6 @@ using RealmAspNet.Models;
 using RealmAspNet.RealmEye;
 using RealmAspNet.RealmEye.Definitions;
 using RealmAspNet.RealmEye.Definitions.Player;
-
-// ReSharper disable SuggestBaseTypeForParameter
 
 namespace RealmAspNet.Controllers
 {

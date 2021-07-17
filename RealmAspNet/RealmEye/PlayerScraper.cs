@@ -79,7 +79,18 @@ namespace RealmAspNet.RealmEye
 						},
 						Method = HttpMethod.Get,
 					};
-					var page = await client.SendAsync();
+
+					IHttpResponse page;
+					try
+					{
+						page = await client.SendAsync();
+					}
+					catch (PlainHttp.HttpRequestException)
+					{
+						Console.WriteLine("Timed out");
+						continue;
+					}
+
 					if (!page.Message.IsSuccessStatusCode)
 					{
 						attempts++;

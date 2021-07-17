@@ -23,14 +23,16 @@ using RealmAspNet.RealmEye.Definitions.Player;
 
 namespace RealmAspNet.Controllers
 {
+	
 	[Route("api/raidutil")]
 	[ApiController]
 	public class RaidUtilController : ControllerBase
 	{
 		private readonly ILogger<RaidUtilController> _logger;
 		private int _concurrJobId;
-		private int _apiReqJobId; 
-		
+		private int _apiReqJobId;
+		private static List<string> _defaultnames;
+
 		/// <summary>
 		/// Creates a new controller for this API.
 		/// </summary>
@@ -40,6 +42,13 @@ namespace RealmAspNet.Controllers
 			_concurrJobId = 0;
 			_apiReqJobId = 0;
 			_logger = logger;
+			_defaultnames = new()
+			{
+				"darq", "deyst", "drac", "drol", "eango", "eashy", "eati", "eendi", "ehoni", "gharr", "iatho", "iawa",
+				"idrae", "iri", "issz", "itani", "laen", "lauk", "lorz", "oalei", "odaru", "oeti", "orothi", "oshyu",
+				"queq", "radph", "rayr", "ril", "rilr", "risrr", "saylt", "scheev", "sek", "serl", "seus", "tal",
+				"tiar", "uoro", "urake", "utanu", "vorck", "vorv", "yangu", "yimi", "zhiar"
+			};
 		}
 
 
@@ -215,6 +224,10 @@ namespace RealmAspNet.Controllers
 			);
 
 			var stopwatch = Stopwatch.StartNew();
+
+			var defaults = names.Intersect(_defaultnames, StringComparer.OrdinalIgnoreCase).ToList();
+			names = names.Except(defaults).ToArray();
+			
 			var job = new ParseJob
 			{
 				ElapsedSec = 0,
@@ -223,6 +236,7 @@ namespace RealmAspNet.Controllers
 				Output = new List<PlayerData>(),
 				Completed = new List<string>(),
 				Failed = new List<string>(),
+				DefaultNames = defaults,
 				Input = names.ToList()
 			};
 
@@ -267,8 +281,15 @@ namespace RealmAspNet.Controllers
 					str = str[(str.IndexOf(":", StringComparison.Ordinal) + 1)..];
 
 				var split = str.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
-				for (var i = 0; i < split.Count; i++)
-					split[i] = split[i].Replace(" ", "").Replace("0", "o");
+				if (split.Count > 0)
+					for (var i = 0; i < split.Count; i++)
+					{
+						if (i < split.Count - 1)
+							split[i] = split[i].Replace(" ", "");
+						else
+							split[i] = split[i].TrimStart();
+						split[i] = split[i].Replace("0", "o");
+					}
 
 #if DEBUG && !NO_PRINT
 				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", split)}");
@@ -293,7 +314,7 @@ namespace RealmAspNet.Controllers
 
 			var json = JsonConvert.DeserializeObject<OcrSpaceResponse>(await reqRes.Content.ReadAsStringAsync());
 			if (json is null || json.OcrExitCode != 1)
-				return null;
+				return new List<string>();
 
 			double left = -1;
 			double top = -1;
@@ -303,7 +324,7 @@ namespace RealmAspNet.Controllers
 			{
 				var firstWord = line.Words[0];
 
-				if (line.LineText.Contains("Players Online", StringComparison.OrdinalIgnoreCase))
+				if (line.LineText.Contains("layers Online", StringComparison.OrdinalIgnoreCase))
 				{
 					if ((int) left != -1)
 						players.Clear();
@@ -326,9 +347,8 @@ namespace RealmAspNet.Controllers
 					// Check if line is an output of /who
 					// lines should contain only a-z (OCR sometimes replaces o's with zeros too).
 					// lines should also contain at least one ',' (or only have 1 word)
-					if ((line.LineText.Contains(",") &&
-					     Regex.IsMatch(line.LineText, "^[a-zA-Z, 0]+")) ||
-					    line.Words.Count == 1)
+					if ((line.LineText.Contains(",") || line.Words.Count == 1)
+					    && Regex.IsMatch(line.LineText, "^[a-zA-Z, 0]+$"))
 						players.AddRange(parsePlayers(line.LineText));
 				}
 			}
@@ -346,6 +366,7 @@ namespace RealmAspNet.Controllers
 		public List<string> Input { get; set; }
 		public List<string> Completed { get; set; }
 		public List<string> Failed { get; set; }
+		public List<string> DefaultNames { get; set; }
 		public List<PlayerData> Output { get; set; }
 	}
 

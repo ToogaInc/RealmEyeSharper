@@ -132,7 +132,7 @@ namespace RealmAspNet.RealmEye.Proxy
 
 			var client = new HttpClient(handler)
 			{
-				Timeout = System.Threading.Timeout.InfiniteTimeSpan
+				Timeout = TimeSpan.FromSeconds(0.5)
 			};
 
 			return client;

@@ -45,14 +45,16 @@ namespace RealmAspNet.RealmEye
 					NumberStyles.Integer | NumberStyles.AllowExponent,
 					NumberFormatInfo.CurrentInfo,
 					out var parsedId
-				) ? parsedId : -2;
+				)
+					? parsedId
+					: -2;
 
 				if (id == -2)
 				{
 					await Console.Error.WriteLineAsync($"[Error] {idStr} is invalid ID. Skipping.");
 					continue;
 				}
-				
+
 				// splitVal = ["Item name	0,-1,0,0,0,0]
 				var splitVal = items[i + 1].Split("\",");
 				// val = Item name

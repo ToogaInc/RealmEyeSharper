@@ -15,7 +15,7 @@ namespace RealmAspNet.RealmEye.Proxy
         private readonly ConcurrentStack<Uri> _proxies;
 
         /// <summary>
-        ///     The `ProxyManager` constructor.
+        /// The `ProxyManager` constructor.
         /// </summary>
         /// <param name="apiKey">The API key.</param>
         public ProxyManager(string apiKey)
@@ -26,16 +26,13 @@ namespace RealmAspNet.RealmEye.Proxy
             if (apiKey == string.Empty)
                 return;
 
-            _proxyClient = new HttpClient(new HttpClientHandler
-            {
-                AllowAutoRedirect = true
-            });
+            _proxyClient = new HttpClient(new HttpClientHandler {AllowAutoRedirect = true});
             _proxyClient.DefaultRequestHeaders.Add("Authorization", $"Token {apiKey}");
         }
 
         /// <summary>
-        ///     Gets the next proxy available. If no proxies are available, this will retrieve a list of new proxies and
-        ///     then return the next one.
+        /// Gets the next proxy available. If no proxies are available, this will retrieve a list of new proxies and
+        /// then return the next one.
         /// </summary>
         /// <returns>The next available proxy to use.</returns>
         /// <exception cref="Exception">If no API key is set.</exception>
@@ -46,14 +43,17 @@ namespace RealmAspNet.RealmEye.Proxy
 
             Uri p;
             while (!_proxies.TryPop(out p))
-                if (_proxies.Count == 0)
+            {
+                if (_proxies.IsEmpty)
                     await GetProxies();
+            }
+            
             return p;
         }
 
         /// <summary>
-        ///     Adds a proxy to the queue of proxies to use. Use this method to "return" a proxy that you got from the
-        ///     `GetNextProxy` method.
+        /// Adds a proxy to the queue of proxies to use. Use this method to "return" a proxy that you got from the
+        /// `GetNextProxy` method.
         /// </summary>
         /// <param name="proxy">The proxy to add to the queue.</param>
         /// <exception cref="Exception">If no API key is set.</exception>
@@ -66,7 +66,7 @@ namespace RealmAspNet.RealmEye.Proxy
         }
 
         /// <summary>
-        ///     Gets the proxies from the Webshare.io API.
+        /// Gets the proxies from the Webshare.io API.
         /// </summary>
         /// <returns>The number of proxies retrieved. If no API key is set, this will return 0.</returns>
         public async Task<int> GetProxies()
@@ -89,7 +89,7 @@ namespace RealmAspNet.RealmEye.Proxy
         }
 
         /// <summary>
-        ///     Removes the proxy from Webshare.io.
+        /// Removes the proxy from Webshare.io.
         /// </summary>
         /// <param name="proxy">The proxy to remove.</param>
         /// <exception cref="Exception">If no API key is set.</exception>

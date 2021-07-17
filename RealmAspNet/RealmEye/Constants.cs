@@ -15,7 +15,7 @@ namespace RealmAspNet.RealmEye
 		public const string RealmEyeBaseUrl = "https://www.realmeye.com";
 
 		public static HttpClient BaseClient;
-		public static HttpClient OCRClient;
+		public static HttpClient OcrClient;
 
 		public static IDictionary<int, ItemData> IdToItem;
 		public static IDictionary<string, ItemData> NameToItem;
@@ -28,18 +28,11 @@ namespace RealmAspNet.RealmEye
 		
 		public static void InitConstants()
 		{
-			BaseClient = new HttpClient(new HttpClientHandler
-			{
-				AllowAutoRedirect = true
-			});
-
-			OCRClient = new HttpClient(new HttpClientHandler
-			{
-				AllowAutoRedirect = true
-			});
-			
+			BaseClient = new HttpClient(new HttpClientHandler {AllowAutoRedirect = true});
 			BaseClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-			OCRClient.DefaultRequestHeaders.Add("apikey", $"{Configuration["ocr_key"]}");
+			
+			OcrClient = new HttpClient(new HttpClientHandler {AllowAutoRedirect = true});
+			OcrClient.DefaultRequestHeaders.Add("apikey", $"{Configuration["ocr_key"]}");
 
 			ProxyManager = new ProxyManager(Configuration["proxy_key"] ?? string.Empty);
 			Task.Run(async () => await ProxyManager.GetProxies());

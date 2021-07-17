@@ -53,7 +53,7 @@ namespace RealmAspNet.RealmEye
         {
 #if USE_PROXY
             // Stopwatch sw = Stopwatch.StartNew();
-            var limit = 5;
+            var limit = 4;
             while (limit-- > 0)
             {
                 var attempts = 0;
@@ -82,9 +82,9 @@ namespace RealmAspNet.RealmEye
                         // Console.WriteLine("--- HTTP GET Time: " + sw.Elapsed.TotalMilliseconds + "ms");
                         // sw.Restart();
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
-                        Console.WriteLine("Timed out");
+                        await Console.Error.WriteLineAsync($"[PlayerScraper] Exception: {e.Message}");
                         continue;
                     }
 

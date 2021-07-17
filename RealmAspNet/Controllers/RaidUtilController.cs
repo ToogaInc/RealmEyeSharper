@@ -317,6 +317,7 @@ namespace RealmAspNet.Controllers
             var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
             {
                 new("url", imgUrl),
+                new("language", "eng"),
                 new("isOverlayRequired", "true"),
                 new("scale", scale),
                 new("OCREngine", "2")

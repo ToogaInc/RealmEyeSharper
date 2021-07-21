@@ -46,7 +46,7 @@ Before you begin, be sure you are on a [supported operating system](https://gith
    ⚠️ As a side note, the directory above the `publish` folder (i.e. the directory that contains the `publish` folder) contains the same exact thing as what is in the `publish` folder. Feel free to delete those files.
 
 
-6. There should be a file called `appsettings.example.json`. Rename this file to `appsettings.json`. Fill in any appropriate API keys. 
+6. There should be a file called `example.appsettings.json`. Rename this file to `appsettings.json`. Fill in any appropriate API keys. 
 
    ⚠️You do not need to provide any API keys to use the API's basic functionality. 
    - You only need to provide a **Webshare.io** API key if you want to send many concurrent RealmEye requests per second (usually for getting many profiles).

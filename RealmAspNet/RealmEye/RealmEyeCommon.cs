@@ -1,6 +1,4 @@
-﻿#define USE_PROXY
-
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -18,15 +16,14 @@ namespace RealmAspNet.RealmEye
 	/// </summary>
 	public static class RealmEyeCommon
 	{
-#if USE_PROXY
 		/// <summary>
 		///     A static constructor to set the factory to the custom one we defined.
 		/// </summary>
 		static RealmEyeCommon()
 		{
+			if (!UseProxy) return; 
 			PlainHttp.HttpRequest.HttpClientFactory = new ProxyHttpClientFactory();
 		}
-#endif
 
 		/// <summary>
 		/// Gets the HtmlDocument from the corresponding URL.
@@ -35,63 +32,65 @@ namespace RealmAspNet.RealmEye
 		/// <returns>The HtmlDocument object.</returns>
 		public static async Task<HtmlDocument?> GetDocument(string url)
 		{
-#if USE_PROXY
-			// Stopwatch sw = Stopwatch.StartNew();
-			var limit = 4;
-			while (limit-- > 0)
+			if (UseProxy)
 			{
-				var attempts = 0;
-				var proxy = await Constants.ProxyManager.GetNextProxy();
-				// Console.WriteLine("- Proxy GET Time: " + sw.Elapsed.TotalMilliseconds + "ms");
-				// sw.Restart();
-				while (attempts < 2)
+				// Stopwatch sw = Stopwatch.StartNew();
+				var limit = 4;
+				while (limit-- > 0)
 				{
-					PlainHttp.IHttpRequest client = new PlainHttp.HttpRequest(url)
+					var attempts = 0;
+					var proxy = await Constants.ProxyManager.GetNextProxy();
+					// Console.WriteLine("- Proxy GET Time: " + sw.Elapsed.TotalMilliseconds + "ms");
+					// sw.Restart();
+					while (attempts < 2)
 					{
-						Proxy = proxy,
-						Headers = new Dictionary<string, string>
+						PlainHttp.IHttpRequest client = new PlainHttp.HttpRequest(url)
 						{
-							{"User-Agent", UserAgents[Rand.Next(UserAgents.Count)]}
-						},
-						Method = HttpMethod.Get
-					};
+							Proxy = proxy,
+							Headers = new Dictionary<string, string>
+							{
+								{"User-Agent", UserAgents[Rand.Next(UserAgents.Count)]}
+							},
+							Method = HttpMethod.Get
+						};
 
-					// Console.WriteLine("-- HTTP Setup Time: " + sw.Elapsed.TotalMilliseconds + "ms");
-					// sw.Restart();
-
-					PlainHttp.IHttpResponse page;
-					try
-					{
-						page = await client.SendAsync();
-						// Console.WriteLine("--- HTTP GET Time: " + sw.Elapsed.TotalMilliseconds + "ms");
+						// Console.WriteLine("-- HTTP Setup Time: " + sw.Elapsed.TotalMilliseconds + "ms");
 						// sw.Restart();
-					}
-					catch (Exception e)
-					{
-						await Console.Error.WriteLineAsync($"[PlayerScraper] Exception: {e.Message}");
-						continue;
+
+						PlainHttp.IHttpResponse page;
+						try
+						{
+							page = await client.SendAsync();
+							// Console.WriteLine("--- HTTP GET Time: " + sw.Elapsed.TotalMilliseconds + "ms");
+							// sw.Restart();
+						}
+						catch (Exception e)
+						{
+							await Console.Error.WriteLineAsync($"[PlayerScraper] Exception: {e.Message}");
+							continue;
+						}
+
+						if (!page.Message.IsSuccessStatusCode)
+						{
+							attempts++;
+							continue;
+						}
+
+						Constants.ProxyManager.AddProxy(proxy);
+						var doc = new HtmlDocument();
+						doc.LoadHtml(page.Body);
+						// Console.WriteLine("---- Finish Time: " + sw.Elapsed.TotalMilliseconds + "ms");
+						// sw.Restart();
+						return doc;
 					}
 
-					if (!page.Message.IsSuccessStatusCode)
-					{
-						attempts++;
-						continue;
-					}
-
-					Constants.ProxyManager.AddProxy(proxy);
-					var doc = new HtmlDocument();
-					doc.LoadHtml(page.Body);
-					// Console.WriteLine("---- Finish Time: " + sw.Elapsed.TotalMilliseconds + "ms");
-					// sw.Restart();
-					return doc;
+					await Constants.ProxyManager.RemoveProxy(proxy);
+					(PlainHttp.HttpRequest.HttpClientFactory as ProxyHttpClientFactory)?.DeleteProxiedClient(proxy);
 				}
 
-				await Constants.ProxyManager.RemoveProxy(proxy);
-				(PlainHttp.HttpRequest.HttpClientFactory as ProxyHttpClientFactory)?.DeleteProxiedClient(proxy);
+				return null;
 			}
 
-			return null;
-#else
 			try
 			{
 				using var page = await BaseClient.GetAsync(url);
@@ -104,7 +103,6 @@ namespace RealmAspNet.RealmEye
 				await Console.Error.WriteLineAsync(e.ToString());
 				return null;
 			}
-#endif
 		}
 
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Threading.Tasks;
 using System.Timers;
 using Microsoft.Extensions.Configuration;
 using RealmAspNet.RealmEye.Proxy;
@@ -25,16 +24,25 @@ namespace RealmAspNet.RealmEye
 		public static ProxyManager ProxyManager;
 
 		public static Random Rand = new();
+
+		public static bool UseProxy;
+		public static bool UseOcr;
 		
 		public static void InitConstants()
 		{
 			BaseClient = new HttpClient(new HttpClientHandler {AllowAutoRedirect = true});
 			BaseClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-			
-			OcrClient = new HttpClient(new HttpClientHandler {AllowAutoRedirect = true});
-			OcrClient.DefaultRequestHeaders.Add("apikey", $"{Configuration["ocr_key"]}");
 
-			ProxyManager = new ProxyManager(Configuration["proxy_key"] ?? string.Empty);
+			var ocrKey = Configuration["ocr_key"] ?? string.Empty;
+			UseOcr = ocrKey != string.Empty;
+			Console.WriteLine($"[Info] {(UseOcr ? "Using OCR" : "Not Using OCR")}.");
+			OcrClient = new HttpClient(new HttpClientHandler {AllowAutoRedirect = true});
+			OcrClient.DefaultRequestHeaders.Add("apikey", ocrKey);
+
+			var proxyKey = Configuration["proxy_key"] ?? string.Empty;
+			UseProxy = proxyKey != string.Empty;
+			Console.WriteLine($"[Info] {(UseProxy ? "Using Proxy" : "Not Using Proxy")}.");
+			ProxyManager = new ProxyManager(proxyKey);
 			// Get all proxies before doing anything.
 			var _ = ProxyManager.GetProxies().Result;
 			

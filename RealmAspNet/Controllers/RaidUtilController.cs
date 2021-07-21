@@ -62,6 +62,9 @@ namespace RealmAspNet.Controllers
 		[HttpPost("parseWhoOnly")]
 		public async Task<IActionResult> ParseWhoScreenshotAsync([FromBody] WhoParseOnlyModel model)
 		{
+			if (!Constants.UseOcr)
+				return Problem("No OCR.Space API Key", null, 503);
+			
 			var jobId = _apiReqJobId++;
 
 			// To make it clearer that there's a new method being called.
@@ -100,6 +103,11 @@ namespace RealmAspNet.Controllers
 		[HttpPost("parseWhoRealmEye")]
 		public async Task<IActionResult> ParseWhoScreenshotAndGetDataAsync([FromBody] ParseImgModel model)
 		{
+			if (!Constants.UseOcr)
+				return Problem("No OCR.Space API Key", null, 503);
+			if (!Constants.UseProxy)
+				return Problem("No Webshare.io API Key", null, 503);
+			
 			var jobId = _apiReqJobId++;
 			// To make it clearer that there's a new method being called.
 			Console.WriteLine("\n");
@@ -232,6 +240,9 @@ namespace RealmAspNet.Controllers
 		[HttpPost("namesRealmEye")]
 		public async Task<IActionResult> RequestMultipleRealmEyeProfilesAsync([FromBody] string[] names)
 		{
+			if (!Constants.UseProxy)
+				return Problem("No Webshare.io API Key", null, 503);
+			
 			return Ok(await SendConcurrentRealmEyeRequestsAsync(names));
 		}
 

@@ -48,7 +48,7 @@ namespace RealmAspNet.Controllers
 		[HttpGet("basics/{name}")]
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> GetBasicDataAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapePlayerProfileAsync(name), "GetBasicDataAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapePlayerProfileAsync(name), "GetBasicDataAsync", name);
 
 		/// <summary>
 		/// Gets the player's basic information (the player's RealmEye "homepage"). This reads from the query string
@@ -66,7 +66,8 @@ namespace RealmAspNet.Controllers
 				));
 
 			var resp = await GetRealmSharperResponse(
-				PlayerScraper.ScrapePlayerProfileAsync(name), "GetBasicDataAsync+"
+				PlayerScraper.ScrapePlayerProfileAsync(name), "GetBasicDataAsync+", 
+				name
 			);
 
 			return resp is PlayerData r
@@ -82,7 +83,7 @@ namespace RealmAspNet.Controllers
 		[HttpGet("petyard/{name}")]
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> GetPetYardAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapePetYardAsync(name), "GetPetYardAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapePetYardAsync(name), "GetPetYardAsync", name);
 
 		/// <summary>
 		/// Gets the player's pet yard information. This reads from the query string instead of a direct parameter.
@@ -100,7 +101,8 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapePetYardAsync(name),
-				"GetPetYardAsync+"
+				"GetPetYardAsync+", 
+				name
 			);
 
 			return resp is PetYardData r
@@ -117,7 +119,7 @@ namespace RealmAspNet.Controllers
 		[HttpGet("graveyard/{name}/{amt:int?}")]
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> ScrapeGraveyardAsync(string name, int amt = 70)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardAsync(name, amt), "ScrapeGraveyardAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardAsync(name, amt), "ScrapeGraveyardAsync", name);
 
 		/// <summary>
 		/// Gets the player's graveyard information. This reads from the query string instead of a direct parameter.
@@ -141,7 +143,8 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeGraveyardAsync(name, amt),
-				"ScrapeGraveyardAsync+"
+				"ScrapeGraveyardAsync+", 
+				name
 			);
 
 			return resp is GraveyardData r
@@ -158,7 +161,7 @@ namespace RealmAspNet.Controllers
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> GetGraveyardSummaryAsync(string name)
 			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardSummaryAsync(name),
-				"GetGraveyardSummaryAsync");
+				"GetGraveyardSummaryAsync", name);
 
 		/// <summary>
 		/// Gets the player's graveyard summary information. This reads from the query string instead of a direct
@@ -177,7 +180,8 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeGraveyardSummaryAsync(name),
-				"GetGraveyardSummaryAsync+"
+				"GetGraveyardSummaryAsync+", 
+				name
 			);
 
 			return resp is GraveyardSummaryData r
@@ -193,7 +197,7 @@ namespace RealmAspNet.Controllers
 		[HttpGet("namehistory/{name}")]
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> GetNameHistoryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeNameHistoryAsync(name), "GetNameHistoryAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapeNameHistoryAsync(name), "GetNameHistoryAsync", name);
 
 		/// <summary>
 		/// Gets the player's name history information. This reads from the query string instead of a direct parameter.
@@ -211,7 +215,8 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeNameHistoryAsync(name),
-				"GetNameHistoryAsync+"
+				"GetNameHistoryAsync+", 
+				name
 			);
 
 			return resp is NameHistoryData r
@@ -227,7 +232,7 @@ namespace RealmAspNet.Controllers
 		[HttpGet("rankhistory/{name}")]
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> GetRankHistoryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeRankHistoryAsync(name), "GetRankHistoryAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapeRankHistoryAsync(name), "GetRankHistoryAsync", name);
 
 		/// <summary>
 		/// Gets the player's rank history information. This reads from the query string instead of a direct parameter.
@@ -245,7 +250,8 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeRankHistoryAsync(name),
-				"GetRankHistoryAsync+"
+				"GetRankHistoryAsync+", 
+				name
 			);
 
 			return resp is RankHistoryData r
@@ -261,7 +267,7 @@ namespace RealmAspNet.Controllers
 		[HttpGet("guildhistory/{name}")]
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> GetGuildHistoryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGuildHistoryAsync(name), "GetGuildHistoryAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGuildHistoryAsync(name), "GetGuildHistoryAsync", name);
 
 		/// <summary>
 		/// Gets the player's guild history information. This reads from the query string instead of a direct parameter.
@@ -279,7 +285,8 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeGuildHistoryAsync(name),
-				"GetGuildHistoryAsync+"
+				"GetGuildHistoryAsync+", 
+				name
 			);
 
 			return resp is GuildHistoryData r
@@ -296,7 +303,7 @@ namespace RealmAspNet.Controllers
 		[HttpGet("exaltations/{name}")]
 		[Obsolete("Use the query string method.")]
 		public async Task<RealmEyeResponse> GetExaltationsAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeExaltationsAsync(name), "GetExaltationsAsync");
+			=> await GetRealmSharperResponse(PlayerScraper.ScrapeExaltationsAsync(name), "GetExaltationsAsync", name);
 
 		/// <summary>
 		/// Gets the player's guild history information. This reads from the query string instead of a direct parameter.
@@ -314,7 +321,8 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeExaltationsAsync(name),
-				"GetExaltationsAsync+"
+				"GetExaltationsAsync+", 
+				name
 			);
 
 			return resp is ExaltationData r
@@ -327,34 +335,36 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <typeparam name="T">The response type. This must be derived from the RealmEyeResponse class.</typeparam>
 		/// <param name="task">The task to perform.</param>
-		/// <param name="methodName">The name of the method.</param>
+		/// <param name="method">The name of the method.</param>
+		/// <param name="name">The person's name.</param>
 		/// <returns>The response.</returns>
-		private async Task<RealmEyePlayerResponse> GetRealmSharperResponse<T>(Task<T> task, string methodName)
+		private async Task<RealmEyePlayerResponse> GetRealmSharperResponse<T>(Task<T> task, string method, string name)
 			where T : notnull, RealmEyePlayerResponse
 		{
 			var sw = new Stopwatch();
-			T data = null;
 			try
 			{
 				sw.Start();
 
-				data = await task;
+				var data = await task;
 				sw.Stop();
 
 				_logger.Log(LogLevel.Information,
-					$"[{methodName}] Scraped Data for {data.Name} in {sw.Elapsed.Milliseconds} MS.");
+					$"[{method}] Scraped Data for {data.Name} in {sw.Elapsed.Milliseconds} MS.");
 
+				// We are doing this instead of just returning "data" because we don't want to send junk data back
+				// to the end user.
 				return data.ProfileIsPrivate
-					? RealmEyePlayerResponse.GenerateGenericResponse(data)
+					? RealmEyePlayerResponse.GenerateGenericResponse(name, data)
 					: data;
 			}
 			catch (Exception e)
 			{
 				sw.Stop();
 				_logger.Log(LogLevel.Error, e,
-					$"[{methodName}] Error Occurred When Getting Profile Data. Name: {data?.Name ?? "N/A"}");
+					$"[{method}] Error Occurred When Getting Profile Data. Name: {name}");
 
-				return RealmEyePlayerResponse.GenerateGenericResponse();
+				return RealmEyePlayerResponse.GenerateGenericResponse(name);
 			}
 		}
 

@@ -35,7 +35,8 @@ namespace RealmAspNet.RealmEye
 			OcrClient.DefaultRequestHeaders.Add("apikey", $"{Configuration["ocr_key"]}");
 
 			ProxyManager = new ProxyManager(Configuration["proxy_key"] ?? string.Empty);
-			Task.Run(async () => await ProxyManager.GetProxies());
+			// Get all proxies before doing anything.
+			var _ = ProxyManager.GetProxies().Result;
 			
 			(IdToItem, NameToItem) = ItemDefinitionScraper.GetDefinitions().Result;
 

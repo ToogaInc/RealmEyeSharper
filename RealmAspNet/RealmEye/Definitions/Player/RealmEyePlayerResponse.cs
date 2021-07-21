@@ -25,11 +25,13 @@
 		/// Creates a generic RealmEyeResponse object from the derived RealmEyeResponse object. Note that this should
 		/// only be done if the derived object doesn't have any useful data (i.e. if the profile is private). 
 		/// </summary>
+		/// <param name="name">The requested name.</param>
 		/// <param name="resp">The derived object.</param>
 		/// <returns>The RealmEyeResponse object.</returns>
-		public static RealmEyePlayerResponse GenerateGenericResponse(RealmEyePlayerResponse resp = null)
+		public static RealmEyePlayerResponse GenerateGenericResponse(string name, RealmEyePlayerResponse resp = null)
 			=> new()
 			{
+				Name = name,
 				ProfileIsPrivate = resp?.ProfileIsPrivate ?? true,
 				SectionIsPrivate = resp?.SectionIsPrivate ?? true,
 				ResultCode = resp?.ResultCode ?? ResultCode.InternalServerError
@@ -43,6 +45,7 @@
 		public static RealmEyePlayerResponse GenerateGenericResponse(ResultCode statusCode)
 			=> new()
 			{
+				Name = string.Empty,
 				ProfileIsPrivate = true,
 				SectionIsPrivate = true,
 				ResultCode = statusCode

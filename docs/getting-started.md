@@ -1,4 +1,4 @@
-[← Go Back](https://github.com/ewang2002/RealmEyeSharper/tree/master/RealmAspNet/docs/docs-guide.md)
+[← Go Back](https://github.com/ewang2002/RealmEyeSharper/blob/master/docs/docs-guide.md)
 
 # Getting Started Guide 
 Here, I will briefly explain how you can set this API up for local use. This is ideal if you are planning on hosting an application that relies on this API on the **same device** as the API itself.

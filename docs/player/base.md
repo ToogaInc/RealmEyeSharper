@@ -1,4 +1,4 @@
-[← Go Back](https://github.com/ewang2002/RealmEyeSharper/tree/master/RealmAspNet/docs/docs-guide.md)
+[← Go Back](https://github.com/ewang2002/RealmEyeSharper/blob/master/docs/docs-guide.md)
 
 # RealmEye API → Player API → Base 
 This represents the base of every request made to the API. When you send an API request to one of the player endpoints, you are guaranteed to get the following properties:

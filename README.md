@@ -10,7 +10,7 @@ An ASP.NET API Application that is designed to scrape RealmEye and provide some 
 - ASP.NET
 
 ## Getting Started
-You can find basic (WIP) documentation [here](https://github.com/ewang2002/RealmEyeSharper/tree/master/RealmAspNet/docs/docs-guide.md). This also includes a basic setup guide. 
+You can find basic (WIP) documentation [here](https://github.com/ewang2002/RealmEyeSharper/blob/master/docs/docs-guide.md). This also includes a basic setup guide. 
 
 ## Acknowledgements
 Inspired by Nightfirecat's [RealmEye API](https://github.com/Nightfirecat/RealmEye-API).

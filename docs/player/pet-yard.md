@@ -1,4 +1,4 @@
-[← Go Back](https://github.com/ewang2002/RealmEyeSharper/tree/master/RealmAspNet/docs/docs-guide.md)
+[← Go Back](https://github.com/ewang2002/RealmEyeSharper/blob/master/docs/docs-guide.md)
 
 # RealmEye API → Player API → Pet Yard
 This endpoint gives you the data that is displayed on the player's pet yard page.

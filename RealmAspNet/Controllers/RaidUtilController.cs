@@ -333,30 +333,31 @@ namespace RealmAspNet.Controllers
 		/// <returns>A list of names parsed.</returns>
 		private static async Task<List<string>> ProcessImg(string imgUrl, string scale)
 		{
-			var parsePlayers = new Func<string, List<string>>(str =>
+			var parsePlayers = new Func<List<Line>, double, List<string>>((lines, avgEndpoint) =>
 			{
-				if (str.Contains(":"))
-					str = str[(str.IndexOf(":", StringComparison.Ordinal) + 1)..];
-
-				// This should never have length 0.
-				var split = str.Split(",", StringSplitOptions.RemoveEmptyEntries).ToList();
-				if (split.Count == 0)
-					return split;
-
-				for (var i = 0; i < split.Count; i++)
+				List<string> names = new();
+				foreach (var line in lines)
 				{
-					if (i < split.Count - 1)
-						split[i] = split[i].Replace(" ", "");
-					else
-						split[i] = split[i].TrimStart();
-					split[i] = split[i].Replace("0", "o");
+					if (line.LineText.Contains(":"))
+						line.Words.RemoveRange(0, 
+							line.Words.FindIndex(word => word.WordText.Contains(":")) + 1);
+
+					for (int i = 0; i < line.Words.Count; i++)
+					{
+						Word word = line.Words[i];
+						if (word.Left > avgEndpoint)
+							break;
+						names.Add(word.WordText.Replace(",", "")
+							.Replace("0", "O")
+							.Replace("1", "l")
+							.Replace("|", "l").Trim());
+					}
 				}
 
 #if DEBUG && !NO_PRINT
-				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", split)}");
+				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", names)}");
 #endif
-
-				return split;
+				return names;
 			});
 
 			var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
@@ -381,7 +382,10 @@ namespace RealmAspNet.Controllers
 
 			double left = -1;
 			double top = -1;
-			var players = new List<string>();
+			List<double> endpoints = new();
+			List<Line> lines = new();
+
+			// if line has words w/o comma - check if has next word ( if so, & nxt word.left < max, include), 
 
 			foreach (var line in json.ParsedResults[0].TextOverlay.Lines)
 			{
@@ -390,11 +394,12 @@ namespace RealmAspNet.Controllers
 				if (line.LineText.Contains("layers Online", StringComparison.OrdinalIgnoreCase))
 				{
 					if ((int) left != -1)
-						players.Clear();
+						lines.Clear();
 
 					left = firstWord.Left;
 					top = firstWord.Top;
-					players.AddRange(parsePlayers(line.LineText));
+					endpoints.Add(line.Words.Last().Left + line.Words.Last().Width);
+					lines.Add(line);
 #if DEBUG && !NO_PRINT
 						Console.WriteLine($"[ParseImg:Bounds] Left: {left}, Top: {top}");
 #endif
@@ -402,21 +407,23 @@ namespace RealmAspNet.Controllers
 				else if ((int) left != -1
 				         && left - 8 < firstWord.Left
 				         && firstWord.Left < left + 8
-				         && firstWord.Top >= top)
+				         && firstWord.Top >= top
+				         && Regex.IsMatch(line.LineText, "^[a-zA-Z, 01|]+$"))
 				{
+					if (line.Words.Last().WordText.Contains(","))
+						endpoints.Add(line.Words.Last().Left + line.Words.Last().Width);
 #if DEBUG && !NO_PRINT
 						Console.WriteLine($"[ParseImg:Line] Testing Line: {line.LineText}");
 #endif
 					// Check if line is an output of /who
 					// lines should contain only a-z (OCR sometimes replaces o's with zeros too).
 					// lines should also contain at least one ',' (or only have 1 word)
-					if ((line.LineText.Contains(",") || line.Words.Count == 1)
-					    && Regex.IsMatch(line.LineText, "^[a-zA-Z, 0]+$"))
-						players.AddRange(parsePlayers(line.LineText));
+					if (line.LineText.Contains(",") || line.Words.Count == 1)
+						lines.Add(line);
 				}
 			}
-
-			return players;
+			
+			return parsePlayers(lines, endpoints.Average());
 		}
 	}
 

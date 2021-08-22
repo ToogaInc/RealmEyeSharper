@@ -2,11 +2,8 @@
 
 namespace RealmAspNet.Models
 {
-	public class WhoParseOnlyModel
+	public class WhoParseOnlyModel : BaseUrlModel
 	{
-		[JsonPropertyName("url")]
-		public string Url { get; set; }
-
 		[JsonPropertyName("scale")]
 		public bool Scale { get; set; }
 	}

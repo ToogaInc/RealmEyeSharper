@@ -3,11 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace RealmAspNet.Models
 {
-	public class ParseImgModel
+	public class ParseImgModel : BaseUrlModel
 	{
-		[JsonPropertyName("url")]
-		public string Url { get; set; }
-
 		[JsonPropertyName("simpleParse")]
 		public bool? SimpleParse { get; set; }
 	}

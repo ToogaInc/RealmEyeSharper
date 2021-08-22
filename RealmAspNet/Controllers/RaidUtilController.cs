@@ -418,6 +418,61 @@ namespace RealmAspNet.Controllers
 
 			return players;
 		}
+
+		/// <summary>
+		/// Parses a key screenshot.
+		/// </summary>
+		/// <param name="model">The model.</param>
+		/// <returns>The list of modifiers.</returns>
+		[HttpPost("keymodifier")]
+		public async Task<List<string>> ParseKeyScreenshot([FromBody] BaseUrlModel model)
+		{
+			Console.WriteLine("\n");
+			_logger.LogInformation(
+				$"[ParseKeyScreenshot] Received Key Screenshot\n"
+				+ $"\t- URL: {model.Url}"
+			);
+			
+			var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
+			{
+				new("url", model.Url),
+				new("language", "eng"),
+				new("isOverlayRequired", "true"),
+				new("scale", "true"),
+				new("OCREngine", "2")
+			});
+
+			using var reqRes = await Constants.OcrClient
+				.PostAsync("https://api.ocr.space/parse/image", formContent);
+
+#if DEBUG && !NO_PRINT
+				Console.WriteLine(await reqRes.Content.ReadAsStringAsync());
+#endif
+
+			var json = JsonConvert.DeserializeObject<OcrSpaceResponse>(await reqRes.Content.ReadAsStringAsync());
+			if (json is null || json.OcrExitCode != 1)
+			{
+				_logger.LogInformation(
+					$"[ParseKeyScreenshot] Failed to Parse\n"
+					+ $"\t- URL: {model.Url}\n"
+					+ $"\t- Reason: OCR result either null or error exit code."
+				);
+				return new List<string>();
+			}
+
+			var returnList = new List<string>();
+			foreach (var line in json.ParsedResults)
+			{
+				returnList.Add(line.ParsedText);
+			}
+
+			_logger.LogInformation(
+				$"[ParseKeyScreenshot] Finished Parsing Key Screenshot\n"
+				+ $"\t- URL: {model.Url}\n"
+				+ $"\t- Results: {string.Join(" | ", returnList)}"
+			);
+			return returnList;
+		}
 	}
 
 	internal static class LevenshteinDistance

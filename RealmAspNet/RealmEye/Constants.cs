@@ -30,7 +30,12 @@ namespace RealmAspNet.RealmEye
 		
 		public static void InitConstants()
 		{
-			BaseClient = new HttpClient(new HttpClientHandler {AllowAutoRedirect = true});
+			BaseClient = new HttpClient(new HttpClientHandler
+			{
+				AllowAutoRedirect = true,
+				// TODO temporary patch for ssl error on linux, need to fix soon.
+				ServerCertificateCustomValidationCallback = (_, _, _, _) => true 
+			});
 			BaseClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
 
 			var ocrKey = Configuration["ocr_key"] ?? string.Empty;

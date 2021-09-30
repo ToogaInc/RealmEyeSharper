@@ -2,7 +2,6 @@
 {
 	public class RealmEyePlayerResponse : RealmEyeResponse
 	{
-		
 		/// <summary>
 		/// <para>Whether the profile is private or not. This should be checked before performing any actions.</para>
 		/// <para>By default, this value is set to <c>true</c>, which indicates that the profile is private.</para>

@@ -387,6 +387,10 @@ namespace RealmAspNet.Controllers
 
 			// if line has words w/o comma - check if has next word ( if so, & nxt word.left < max, include), 
 
+			// TODO missing "Pod" in 
+			// https://cdn.discordapp.com/attachments/769659912941862972/770131676675440650/unknown.png
+			// TODO unable to parse many names in
+			// https://cdn.discordapp.com/attachments/737357260455542894/899060517086298132/image0.jpg
 			foreach (var line in json.ParsedResults[0].TextOverlay.Lines)
 			{
 				var firstWord = line.Words[0];
@@ -406,7 +410,7 @@ namespace RealmAspNet.Controllers
 				}
 				else if ((int) left != -1
 				         && left - 8 < firstWord.Left
-				         && firstWord.Left < left + 8
+				         && firstWord.Left < left + 8 // condition fails
 				         && firstWord.Top >= top
 				         && Regex.IsMatch(line.LineText, "^[a-zA-Z, 01|]+$"))
 				{

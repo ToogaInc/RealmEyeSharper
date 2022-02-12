@@ -53,6 +53,83 @@ namespace RealmAspNet.Controllers
 			_logger = logger;
 		}
 
+		/// <summary>
+		/// Parses a /who screenshot. Uses OCR.space's OCR API to get text from a /who screenshot. This does very
+		/// minimal post-processing, hence why it has <c>Basic</c> in its name.
+		/// </summary>
+		/// <param name="model">The model. This should contain an URL.</param>
+		/// <returns>The parse results.</returns>
+		[HttpPost("parseWhoBasic")]
+		public async Task<IActionResult> ParseWhoScreenshotAsync([FromBody] BaseUrlModel model)
+		{
+			if (!Constants.UseOcr)
+				return Problem("No OCR.Space API Key", null, 503);
+
+			var jobId = _apiReqJobId++;
+
+			// To make it clearer that there's a new method being called.
+			Console.WriteLine("\n");
+			_logger.LogInformation(
+				$"[ParseImgWhoBasic] [ID {jobId}] Received Image URL for Basic Parsing. URL: {model.Url}"
+			);
+
+			var stopwatch = Stopwatch.StartNew();
+#if DEBUG && !NO_PRINT
+			Console.WriteLine("[ParseImgWhoOnly] Sending Image to OCR Endpoint.");
+#endif
+
+			// C# "true.toString()" returns "True" not "true"
+			var lines = await ProcessImg(model.Url, "true", true);
+			stopwatch.Stop();
+
+			var idx = lines.FindIndex(x =>
+			{
+				var line = x.ToLower().Trim();
+				return (line.StartsWith("players") ? 1 : 0)
+					+ (line.Contains("online") ? 1 : 0)
+					+ (line.Contains('(') ? 1 : 0)
+					+ (line.Contains(')') ? 1 : 0) > 2 && line.Contains(':');
+			});
+
+			var names = new List<string>();
+			if (idx != -1)
+			{
+				const StringSplitOptions opt = StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries;
+				var initArr = lines[idx++].Split(':')[1]
+					.Split(new[] { ',', '.' }, opt);
+				names.AddRange(
+					initArr.Select(x => x.Replace("0", "O")
+						.Replace("1", "l")
+						.Replace("|", "l")
+						.Replace(" ", string.Empty)
+					)
+				);
+
+				for (var i = idx; i < lines.Count; i++)
+				{
+					if (!lines[i].Contains(',') && !lines[i].Contains('.'))
+						break;
+
+					var thisLine = lines[i].Split(new[] { ',', '.' }, opt);
+					names.AddRange(
+						thisLine.Select(x => x.Replace("0", "O")
+							.Replace("1", "l")
+							.Replace("|", "l")
+							.Replace(" ", string.Empty)
+						)
+					);
+				}
+			}
+
+			// If we're only interested in basic /who parsing, then run this and return.
+			_logger.LogInformation(
+				$"[ParseImgWhoOnly] [ID {jobId}] /who Parsing Successful.\n"
+				+ $"\t- Count: {names.Count}\n"
+				+ $"\t- Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
+			);
+
+			return Ok(new { Names = names, TimeElapsedSec = stopwatch.Elapsed.TotalSeconds });
+		}
 
 		/// <summary>
 		/// Parses a /who screenshot. Uses OCR.space's OCR API to get text from a /who screenshot.
@@ -64,7 +141,7 @@ namespace RealmAspNet.Controllers
 		{
 			if (!Constants.UseOcr)
 				return Problem("No OCR.Space API Key", null, 503);
-			
+
 			var jobId = _apiReqJobId++;
 
 			// To make it clearer that there's a new method being called.
@@ -80,7 +157,7 @@ namespace RealmAspNet.Controllers
 #endif
 
 			// C# "true.toString()" returns "True" not "true"
-			var names = await ProcessImg(model.Url, model.Scale ? "true" : "false");
+			var names = await ProcessImg(model.Url, model.Scale ? "true" : "false", false);
 
 			stopwatch.Stop();
 
@@ -91,7 +168,7 @@ namespace RealmAspNet.Controllers
 				+ $"\t- Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
 			);
 
-			return Ok(new {Names = names, TimeElapsedSec = stopwatch.Elapsed.TotalSeconds});
+			return Ok(new { Names = names, TimeElapsedSec = stopwatch.Elapsed.TotalSeconds });
 		}
 
 		/// <summary>
@@ -107,7 +184,7 @@ namespace RealmAspNet.Controllers
 				return Problem("No OCR.Space API Key", null, 503);
 			if (!Constants.UseProxy)
 				return Problem("No Webshare.io API Key", null, 503);
-			
+
 			var jobId = _apiReqJobId++;
 			// To make it clearer that there's a new method being called.
 			Console.WriteLine("\n");
@@ -122,7 +199,7 @@ namespace RealmAspNet.Controllers
 			Console.WriteLine("[ParseImg] Sending Image to OCR Endpoint.");
 #endif
 
-			var unscaledTask = ProcessImg(model.Url, "false");
+			var unscaledTask = ProcessImg(model.Url, "false", false);
 
 			// If we're only interested in basic /who parsing and RE data, then run this and return.
 			if (model.SimpleParse ?? false)
@@ -148,7 +225,7 @@ namespace RealmAspNet.Controllers
 			}
 
 			// Otherwise, we're going to do more advanced /who parsing and get RE data.
-			var scaledTask = ProcessImg(model.Url, "true");
+			var scaledTask = ProcessImg(model.Url, "true", false);
 			var allNames = await Task.WhenAll(unscaledTask, scaledTask);
 
 			var ocrTimeTaken = stopwatch.Elapsed.TotalSeconds;
@@ -242,7 +319,7 @@ namespace RealmAspNet.Controllers
 		{
 			if (!Constants.UseProxy)
 				return Problem("No Webshare.io API Key", null, 503);
-			
+
 			return Ok(await SendConcurrentRealmEyeRequestsAsync(names));
 		}
 
@@ -285,7 +362,7 @@ namespace RealmAspNet.Controllers
 			var bag = new ConcurrentBag<PlayerData>();
 			var block = new ActionBlock<string>(
 				async name => bag.Add(await PlayerScraper.ScrapePlayerProfileAsync(name)),
-				new ExecutionDataflowBlockOptions {MaxDegreeOfParallelism = 40}
+				new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 40 }
 			);
 
 			foreach (var name in names) await block.SendAsync(name);
@@ -330,36 +407,10 @@ namespace RealmAspNet.Controllers
 		/// </summary>
 		/// <param name="imgUrl">The URL to the image.</param>
 		/// <param name="scale">Either "true" or "false"</param>
+		/// <param name="simple">Whether to perform a simple parse.</param>
 		/// <returns>A list of names parsed.</returns>
-		private static async Task<List<string>> ProcessImg(string imgUrl, string scale)
+		private static async Task<List<string>> ProcessImg(string imgUrl, string scale, bool simple)
 		{
-			var parsePlayers = new Func<List<Line>, double, List<string>>((lines, avgEndpoint) =>
-			{
-				List<string> names = new();
-				foreach (var line in lines)
-				{
-					if (line.LineText.Contains(":"))
-						line.Words.RemoveRange(0, 
-							line.Words.FindIndex(word => word.WordText.Contains(":")) + 1);
-
-					for (int i = 0; i < line.Words.Count; i++)
-					{
-						Word word = line.Words[i];
-						if (word.Left > avgEndpoint)
-							break;
-						names.Add(word.WordText.Replace(",", "")
-							.Replace("0", "O")
-							.Replace("1", "l")
-							.Replace("|", "l").Trim());
-					}
-				}
-
-#if DEBUG && !NO_PRINT
-				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", names)}");
-#endif
-				return names;
-			});
-
 			var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
 			{
 				new("url", imgUrl),
@@ -380,6 +431,35 @@ namespace RealmAspNet.Controllers
 			if (json is null || json.OcrExitCode != 1)
 				return new List<string>();
 
+			if (simple)
+				return json.ParsedResults.Select(x => x.ParsedText).ToList();
+
+			var parsePlayers = new Func<List<Line>, double, List<string>>((lines, avgEndpoint) =>
+			{
+				List<string> names = new();
+				foreach (var line in lines)
+				{
+					if (line.LineText.Contains(":"))
+						line.Words.RemoveRange(0,
+							line.Words.FindIndex(word => word.WordText.Contains(":")) + 1);
+
+					foreach (var word in line.Words)
+					{
+						if (word.Left > avgEndpoint)
+							break;
+						names.Add(word.WordText.Replace(",", "")
+							.Replace("0", "O")
+							.Replace("1", "l")
+							.Replace("|", "l").Trim());
+					}
+				}
+
+#if DEBUG && !NO_PRINT
+				Console.WriteLine($"[ParseImg:ParsePlayers]: {string.Join(", ", names)}");
+#endif
+				return names;
+			});
+
 			double left = -1;
 			double top = -1;
 			List<double> endpoints = new();
@@ -397,7 +477,7 @@ namespace RealmAspNet.Controllers
 
 				if (line.LineText.Contains("layers Online", StringComparison.OrdinalIgnoreCase))
 				{
-					if ((int) left != -1)
+					if ((int)left != -1)
 						lines.Clear();
 
 					left = firstWord.Left;
@@ -408,7 +488,7 @@ namespace RealmAspNet.Controllers
 						Console.WriteLine($"[ParseImg:Bounds] Left: {left}, Top: {top}");
 #endif
 				}
-				else if ((int) left != -1
+				else if ((int)left != -1
 				         && left - 8 < firstWord.Left
 				         && firstWord.Left < left + 8 // condition fails
 				         && firstWord.Top >= top
@@ -426,7 +506,7 @@ namespace RealmAspNet.Controllers
 						lines.Add(line);
 				}
 			}
-			
+
 			return parsePlayers(lines, endpoints.Average());
 		}
 
@@ -443,7 +523,7 @@ namespace RealmAspNet.Controllers
 				$"[ParseKeyScreenshot] Received Key Screenshot\n"
 				+ $"\t- URL: {model.Url}"
 			);
-			
+
 			var formContent = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
 			{
 				new("url", model.Url),

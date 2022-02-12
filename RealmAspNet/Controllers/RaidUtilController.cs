@@ -79,7 +79,7 @@ namespace RealmAspNet.Controllers
 #endif
 
 			// C# "true.toString()" returns "True" not "true"
-			var lines = await ProcessImg(model.Url, "true", true);
+			var lines = await ProcessImg(model.Url, "false", true);
 			stopwatch.Stop();
 
 			var idx = lines.FindIndex(x =>
@@ -123,7 +123,7 @@ namespace RealmAspNet.Controllers
 
 			// If we're only interested in basic /who parsing, then run this and return.
 			_logger.LogInformation(
-				$"[ParseImgWhoOnly] [ID {jobId}] /who Parsing Successful.\n"
+				$"[ParseImgWhoBasic] [ID {jobId}] /who Parsing Successful.\n"
 				+ $"\t- Count: {names.Count}\n"
 				+ $"\t- Time: {stopwatch.Elapsed.TotalSeconds} Seconds."
 			);

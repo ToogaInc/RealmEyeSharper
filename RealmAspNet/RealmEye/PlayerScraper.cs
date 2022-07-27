@@ -78,10 +78,10 @@ namespace RealmAspNet.RealmEye
 						returnData.Skins = int.Parse(col.NextSibling.InnerText.Split('(')[0]);
 						break;
 					case "Fame":
-						returnData.Fame = int.Parse(col.NextSibling.InnerText.Split('(')[0]);
+						returnData.Fame = long.Parse(col.NextSibling.InnerText.Split('(')[0]);
 						break;
 					case "Exp":
-						returnData.Exp = int.Parse(col.NextSibling.InnerText.Split('(')[0]);
+						returnData.Exp = long.Parse(col.NextSibling.InnerText.Split('(')[0]);
 						break;
 					case "Rank":
 						returnData.Rank = int.Parse(col.NextSibling.InnerText);
@@ -184,7 +184,7 @@ namespace RealmAspNet.RealmEye
 					: -1;
 
 				// alive fame
-				var fame = int.TryParse(characterRow.SelectSingleNode($"td[{6 - tableOffset}]").InnerText,
+				var fame = long.TryParse(characterRow.SelectSingleNode($"td[{6 - tableOffset}]").InnerText,
 					out var f)
 					? f
 					: -1;

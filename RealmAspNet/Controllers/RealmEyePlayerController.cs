@@ -16,12 +16,12 @@ namespace RealmAspNet.Controllers
 	[ApiController]
 	public class RealmEyePlayerController : ControllerBase
 	{
-		private readonly ILogger<RealmEyePlayerController> _logger;
 		private readonly JsonSerializerOptions _defaultSerializationOption;
+		private readonly ILogger<RealmEyePlayerController> _logger;
 		private readonly JsonSerializerOptions _prettifySerializationOption;
 
 		/// <summary>
-		/// Creates a new controller for this API.
+		///     Creates a new controller for this API.
 		/// </summary>
 		/// <param name="logger">The logging object.</param>
 		public RealmEyePlayerController(ILogger<RealmEyePlayerController> logger)
@@ -41,8 +41,8 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's basic information (the player's RealmEye "homepage"). This reads from the query string
-		/// instead of a direct parameter.
+		///     Gets the player's basic information (the player's RealmEye "homepage"). This reads from the query string
+		///     instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("basics")]
@@ -63,11 +63,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is PlayerData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -78,7 +76,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's pet yard information. This reads from the query string instead of a direct parameter.
+		///     Gets the player's pet yard information. This reads from the query string instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("petyard")]
@@ -100,11 +98,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is PetYardData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -115,7 +111,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's graveyard information. This reads from the query string instead of a direct parameter.
+		///     Gets the player's graveyard information. This reads from the query string instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("graveyard")]
@@ -143,11 +139,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is GraveyardData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -158,8 +152,8 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's graveyard summary information. This reads from the query string instead of a direct
-		/// parameter.
+		///     Gets the player's graveyard summary information. This reads from the query string instead of a direct
+		///     parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("graveyardsummary")]
@@ -181,11 +175,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is GraveyardSummaryData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -196,7 +188,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's name history information. This reads from the query string instead of a direct parameter.
+		///     Gets the player's name history information. This reads from the query string instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("namehistory")]
@@ -218,11 +210,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is NameHistoryData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -233,7 +223,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's rank history information. This reads from the query string instead of a direct parameter.
+		///     Gets the player's rank history information. This reads from the query string instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("rankhistory")]
@@ -255,11 +245,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is RankHistoryData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -270,7 +258,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's guild history information. This reads from the query string instead of a direct parameter.
+		///     Gets the player's guild history information. This reads from the query string instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("guildhistory")]
@@ -292,11 +280,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is GuildHistoryData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -307,7 +293,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's guild history information. This reads from the query string instead of a direct parameter.
+		///     Gets the player's guild history information. This reads from the query string instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("exaltations")]
@@ -329,11 +315,9 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is ExaltationData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
 					_prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(
 				HttpContext.Request.Query,
@@ -344,7 +328,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Executes the scraping code and returns the response of the scrape.
+		///     Executes the scraping code and returns the response of the scrape.
 		/// </summary>
 		/// <typeparam name="T">The response type. This must be derived from the RealmEyeResponse class.</typeparam>
 		/// <param name="task">The task to perform.</param>

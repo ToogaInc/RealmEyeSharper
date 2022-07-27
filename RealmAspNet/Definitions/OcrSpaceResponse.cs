@@ -7,8 +7,12 @@ namespace RealmAspNet.Definitions
 	{
 		[JsonProperty("ParsedResults")] public List<ParsedResult> ParsedResults { get; set; }
 		[JsonProperty("OCRExitCode")] public long OcrExitCode { get; set; }
-		[JsonProperty("IsErroredOnProcessing")] public bool IsErroredOnProcessing { get; set; }
-		[JsonProperty("ProcessingTimeInMilliseconds")] public long ProcessingTimeInMilliseconds { get; set; }
+
+		[JsonProperty("IsErroredOnProcessing")]
+		public bool IsErroredOnProcessing { get; set; }
+
+		[JsonProperty("ProcessingTimeInMilliseconds")]
+		public long ProcessingTimeInMilliseconds { get; set; }
 	}
 
 	public class ParsedResult

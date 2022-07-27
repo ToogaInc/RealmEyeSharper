@@ -17,12 +17,12 @@ namespace RealmAspNet.Controllers
 	[ApiController]
 	public class RealmEyeGuildController : ControllerBase
 	{
-		private readonly ILogger<RealmEyeGuildController> _logger;
 		private readonly JsonSerializerOptions _defaultSerializationOption;
+		private readonly ILogger<RealmEyeGuildController> _logger;
 		private readonly JsonSerializerOptions _prettifySerializationOption;
 
 		/// <summary>
-		/// Creates a new controller for this API.
+		///     Creates a new controller for this API.
 		/// </summary>
 		/// <param name="logger">The logging object.</param>
 		public RealmEyeGuildController(ILogger<RealmEyeGuildController> logger)
@@ -42,8 +42,8 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Gets the player's basic information (the player's RealmEye "homepage"). This reads from the query string
-		/// instead of a direct parameter.
+		///     Gets the player's basic information (the player's RealmEye "homepage"). This reads from the query string
+		///     instead of a direct parameter.
 		/// </summary>
 		/// <returns>The API response.</returns>
 		[HttpGet("basics")]
@@ -64,10 +64,8 @@ namespace RealmAspNet.Controllers
 			);
 
 			if (resp is GuildData r)
-			{
 				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r, _prettifySerializationOption,
 					_defaultSerializationOption));
-			}
 
 			return GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp,
 				_prettifySerializationOption,
@@ -76,7 +74,7 @@ namespace RealmAspNet.Controllers
 
 
 		/// <summary>
-		/// Executes the scraping code and returns the response of the scrape.
+		///     Executes the scraping code and returns the response of the scrape.
 		/// </summary>
 		/// <typeparam name="T">The response type. This must be derived from the RealmEyeResponse class.</typeparam>
 		/// <param name="task">The task to perform.</param>

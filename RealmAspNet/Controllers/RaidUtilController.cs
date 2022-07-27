@@ -54,8 +54,8 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Parses a /who screenshot. Uses OCR.space's OCR API to get text from a /who screenshot. This does very
-		/// minimal post-processing, hence why it has <c>Basic</c> in its name.
+		///     Parses a /who screenshot. Uses OCR.space's OCR API to get text from a /who screenshot. This does very
+		///     minimal post-processing, hence why it has <c>Basic</c> in its name.
 		/// </summary>
 		/// <param name="model">The model. This should contain an URL.</param>
 		/// <returns>The parse results.</returns>
@@ -132,7 +132,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Parses a /who screenshot. Uses OCR.space's OCR API to get text from a /who screenshot.
+		///     Parses a /who screenshot. Uses OCR.space's OCR API to get text from a /who screenshot.
 		/// </summary>
 		/// <param name="model">The model. This should contain an URL.</param>
 		/// <returns>The parse results.</returns>
@@ -172,8 +172,8 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Parses a /who screenshot and gets all the player's basic information (the player's RealmEye "homepage").
-		/// Uses OCR.space's OCR API to get text from a /who screenshot.
+		///     Parses a /who screenshot and gets all the player's basic information (the player's RealmEye "homepage").
+		///     Uses OCR.space's OCR API to get text from a /who screenshot.
 		/// </summary>
 		/// <param name="model">The model. This should contain an URL.</param>
 		/// <returns>The parse results.</returns>
@@ -310,7 +310,7 @@ namespace RealmAspNet.Controllers
 
 
 		/// <summary>
-		/// Gets all the player's basic information (the player's RealmEye "homepage").
+		///     Gets all the player's basic information (the player's RealmEye "homepage").
 		/// </summary>
 		/// <param name="names">The names.</param>
 		/// <returns>The response.</returns>
@@ -324,7 +324,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Sends multiple RealmEye requests.
+		///     Sends multiple RealmEye requests.
 		/// </summary>
 		/// <param name="names">The names to get data for.</param>
 		/// <returns>The job result.</returns>
@@ -403,7 +403,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Processes the specified image with the specified scale.
+		///     Processes the specified image with the specified scale.
 		/// </summary>
 		/// <param name="imgUrl">The URL to the image.</param>
 		/// <param name="scale">Either "true" or "false"</param>
@@ -511,7 +511,7 @@ namespace RealmAspNet.Controllers
 		}
 
 		/// <summary>
-		/// Parses a key screenshot.
+		///     Parses a key screenshot.
 		/// </summary>
 		/// <param name="model">The model.</param>
 		/// <returns>The list of modifiers.</returns>
@@ -520,7 +520,7 @@ namespace RealmAspNet.Controllers
 		{
 			Console.WriteLine("\n");
 			_logger.LogInformation(
-				$"[ParseKeyScreenshot] Received Key Screenshot\n"
+				"[ParseKeyScreenshot] Received Key Screenshot\n"
 				+ $"\t- URL: {model.Url}"
 			);
 
@@ -544,21 +544,18 @@ namespace RealmAspNet.Controllers
 			if (json is null || json.OcrExitCode != 1)
 			{
 				_logger.LogInformation(
-					$"[ParseKeyScreenshot] Failed to Parse\n"
+					"[ParseKeyScreenshot] Failed to Parse\n"
 					+ $"\t- URL: {model.Url}\n"
-					+ $"\t- Reason: OCR result either null or error exit code."
+					+ "\t- Reason: OCR result either null or error exit code."
 				);
 				return new List<string>();
 			}
 
 			var returnList = new List<string>();
-			foreach (var line in json.ParsedResults)
-			{
-				returnList.Add(line.ParsedText);
-			}
+			foreach (var line in json.ParsedResults) returnList.Add(line.ParsedText);
 
 			_logger.LogInformation(
-				$"[ParseKeyScreenshot] Finished Parsing Key Screenshot\n"
+				"[ParseKeyScreenshot] Finished Parsing Key Screenshot\n"
 				+ $"\t- URL: {model.Url}\n"
 				+ $"\t- Results: {string.Join(" | ", returnList)}"
 			);

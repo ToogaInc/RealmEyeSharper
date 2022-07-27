@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
+using PlainHttp;
 using RealmAspNet.RealmEye.Definitions.Player;
 using RealmAspNet.RealmEye.Proxy;
 using static RealmAspNet.RealmEye.Constants;
@@ -12,7 +13,7 @@ using static RealmAspNet.RealmEye.Constants;
 namespace RealmAspNet.RealmEye
 {
 	/// <summary>
-	/// A set of common methods used in various RealmEye scraping methods.
+	///     A set of common methods used in various RealmEye scraping methods.
 	/// </summary>
 	public static class RealmEyeCommon
 	{
@@ -21,12 +22,12 @@ namespace RealmAspNet.RealmEye
 		/// </summary>
 		static RealmEyeCommon()
 		{
-			if (!UseProxy) return; 
-			PlainHttp.HttpRequest.HttpClientFactory = new ProxyHttpClientFactory();
+			if (!UseProxy) return;
+			HttpRequest.HttpClientFactory = new ProxyHttpClientFactory();
 		}
 
 		/// <summary>
-		/// Gets the HtmlDocument from the corresponding URL.
+		///     Gets the HtmlDocument from the corresponding URL.
 		/// </summary>
 		/// <param name="url">The URL.</param>
 		/// <returns>The HtmlDocument object.</returns>
@@ -44,12 +45,12 @@ namespace RealmAspNet.RealmEye
 					// sw.Restart();
 					while (attempts < 2)
 					{
-						PlainHttp.IHttpRequest client = new PlainHttp.HttpRequest(url)
+						IHttpRequest client = new HttpRequest(url)
 						{
 							Proxy = proxy,
 							Headers = new Dictionary<string, string>
 							{
-								{"User-Agent", UserAgents[Rand.Next(UserAgents.Count)]}
+								{ "User-Agent", UserAgents[Rand.Next(UserAgents.Count)] }
 							},
 							Method = HttpMethod.Get
 						};
@@ -57,7 +58,7 @@ namespace RealmAspNet.RealmEye
 						// Console.WriteLine("-- HTTP Setup Time: " + sw.Elapsed.TotalMilliseconds + "ms");
 						// sw.Restart();
 
-						PlainHttp.IHttpResponse page;
+						IHttpResponse page;
 						try
 						{
 							page = await client.SendAsync();
@@ -85,7 +86,7 @@ namespace RealmAspNet.RealmEye
 					}
 
 					await Constants.ProxyManager.RemoveProxy(proxy);
-					(PlainHttp.HttpRequest.HttpClientFactory as ProxyHttpClientFactory)?.DeleteProxiedClient(proxy);
+					(HttpRequest.HttpClientFactory as ProxyHttpClientFactory)?.DeleteProxiedClient(proxy);
 				}
 
 				return null;
@@ -107,11 +108,11 @@ namespace RealmAspNet.RealmEye
 
 
 		/// <summary>
-		/// Gets the character cosmetics information.
+		///     Gets the character cosmetics information.
 		/// </summary>
 		/// <param name="characterDisplay">
-		/// The node containing the character cosmetics information (like what
-		/// dyes/clothing the character is wearing).
+		///     The node containing the character cosmetics information (like what
+		///     dyes/clothing the character is wearing).
 		/// </param>
 		/// <returns>The character display information.</returns>
 		public static CharacterSkinInfo GetCharacterDisplayInfo(HtmlNode? characterDisplay)
@@ -124,9 +125,9 @@ namespace RealmAspNet.RealmEye
 				ClothingDyeName = string.Empty
 			};
 
-			if (characterDisplay is null) 
+			if (characterDisplay is null)
 				return characterDisplayInfo;
-			
+
 			// The big one
 			var accessoryDye = characterDisplay.FirstChild
 				.Attributes["data-accessory-dye-id"]
@@ -166,7 +167,7 @@ namespace RealmAspNet.RealmEye
 		}
 
 		/// <summary>
-		/// Gets the character's equipment.
+		///     Gets the character's equipment.
 		/// </summary>
 		/// <param name="equips">The node containing the equipment information for the character.</param>
 		/// <returns>The list of equipment the character is wearing.</returns>

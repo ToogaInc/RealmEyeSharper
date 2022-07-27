@@ -11,12 +11,14 @@ namespace RealmAspNet.RealmEye
 	public static class ItemDefinitionScraper
 	{
 		/// <summary>
-		/// Gets the latest definitions from RealmEye. The definitions here map the item IDs to a specified item,
-		/// which can be used to map items like pet skins. 
+		///     Gets the latest definitions from RealmEye. The definitions here map the item IDs to a specified item,
+		///     which can be used to map items like pet skins.
 		/// </summary>
-		/// <returns>A tuple containing two dictionaries. The first dictionary consists of the item ID as the key and
-		/// the item object as the value. The second dictionary consists of the item name as the key and the item object
-		/// as the value.</returns>
+		/// <returns>
+		///     A tuple containing two dictionaries. The first dictionary consists of the item ID as the key and
+		///     the item object as the value. The second dictionary consists of the item name as the key and the item object
+		///     as the value.
+		/// </returns>
 		public static async Task<(Dictionary<int, ItemData> idToObj, Dictionary<string, ItemData> nameToObj)>
 			GetDefinitions()
 		{

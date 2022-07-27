@@ -9,17 +9,19 @@ namespace RealmAspNet.Controllers
 	public static class Helpers
 	{
 		/// <summary>
-		/// Gets the name from the query collection.
+		///     Gets the name from the query collection.
 		/// </summary>
 		/// <param name="collection">The query collection.</param>
 		/// <returns>The name, if any. An empty string otherwise.</returns>
 		public static string GetNameFromQuery(IQueryCollection collection)
-			=> collection.TryGetValue("name", out var name) ? name : string.Empty;
+		{
+			return collection.TryGetValue("name", out var name) ? name : string.Empty;
+		}
 
 
 		/// <summary>
-		/// Serializes the object into a string. In particular, this will check to see if we need to prettify the
-		/// output string.
+		///     Serializes the object into a string. In particular, this will check to see if we need to prettify the
+		///     output string.
 		/// </summary>
 		/// <param name="queryCollection">The query collection.</param>
 		/// <param name="resp">The response object.</param>
@@ -43,7 +45,7 @@ namespace RealmAspNet.Controllers
 
 
 		/// <summary>
-		/// Gets the appropriate return response from a failed RealmEye response.
+		///     Gets the appropriate return response from a failed RealmEye response.
 		/// </summary>
 		/// <param name="response">The original response.</param>
 		/// <param name="returnVal">The value to return.</param>
@@ -51,12 +53,14 @@ namespace RealmAspNet.Controllers
 		/// <returns>The appropriate IActionResult.</returns>
 		public static IActionResult GetActionResult(RealmEyeResponse response, string returnVal,
 			ControllerBase controllerBase)
-			=> response.ResultCode switch
+		{
+			return response.ResultCode switch
 			{
 				ResultCode.NotFound => controllerBase.NotFound(returnVal),
 				ResultCode.ServiceUnavailable => controllerBase.StatusCode(503, returnVal),
 				ResultCode.InternalServerError => controllerBase.StatusCode(500, returnVal),
 				_ => controllerBase.Ok(returnVal)
 			};
+		}
 	}
 }

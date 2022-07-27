@@ -30,13 +30,7 @@ namespace RealmAspNet
 				{
 					o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 				});
-			services.AddLogging(opt =>
-			{
-				opt.AddSimpleConsole(cOpt =>
-				{
-					cOpt.TimestampFormat = "[HH:mm:ss] ";
-				});
-			});
+			services.AddLogging(opt => { opt.AddSimpleConsole(cOpt => { cOpt.TimestampFormat = "[HH:mm:ss] "; }); });
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -52,10 +46,7 @@ namespace RealmAspNet
 				ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 			});
 			app.UseAuthorization();
-			app.UseEndpoints(endpoints =>
-			{
-				endpoints.MapControllers();
-			});
+			app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 		}
 	}
 }

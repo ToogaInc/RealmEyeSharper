@@ -53,11 +53,11 @@ namespace RealmAspNet.RealmEye.Definitions.Player
 		// Small
 		public int ClothingDyeId { get; set; }
 		public string ClothingDyeName { get; set; }
-		
+
 		// Big
 		public int AccessoryDyeId { get; set; }
 		public string AccessoryDyeName { get; set; }
-		
+
 		// Skin
 		public int SkinId { get; set; }
 	}

@@ -4,7 +4,6 @@ namespace RealmAspNet.Models
 {
 	public class BaseUrlModel
 	{
-		[JsonPropertyName("url")]
-		public string Url { get; set; }
+		[JsonPropertyName("url")] public string Url { get; set; }
 	}
 }

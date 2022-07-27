@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using RealmAspNet.RealmEye;
 using RealmAspNet.RealmEye.Definitions;
 using RealmAspNet.RealmEye.Definitions.Player;
+using static RealmAspNet.Controllers.Helpers;
 
 namespace RealmAspNet.Controllers
 {
@@ -29,26 +29,16 @@ namespace RealmAspNet.Controllers
 			_logger = logger;
 			_prettifySerializationOption = new JsonSerializerOptions
 			{
-				IgnoreNullValues = true, 
-				WriteIndented = true, 
+				DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+				WriteIndented = true,
 				PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 			};
 			_defaultSerializationOption = new JsonSerializerOptions
 			{
-				IgnoreNullValues = true, 
+				DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
 				PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 			};
 		}
-
-		/// <summary>
-		/// Gets the player's basic information (the player's RealmEye "homepage").
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("basics/{name}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> GetBasicDataAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapePlayerProfileAsync(name), "GetBasicDataAsync", name);
 
 		/// <summary>
 		/// Gets the player's basic information (the player's RealmEye "homepage"). This reads from the query string
@@ -62,28 +52,30 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var resp = await GetRealmSharperResponse(
-				PlayerScraper.ScrapePlayerProfileAsync(name), "GetBasicDataAsync+", 
+				PlayerScraper.ScrapePlayerProfileAsync(name), "GetBasicDataAsync+",
 				name
 			);
 
-			return resp is PlayerData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
-		}
+			if (resp is PlayerData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
 
-		/// <summary>
-		/// Gets the player's pet yard information.
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("petyard/{name}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> GetPetYardAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapePetYardAsync(name), "GetPetYardAsync", name);
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
+		}
 
 		/// <summary>
 		/// Gets the player's pet yard information. This reads from the query string instead of a direct parameter.
@@ -96,30 +88,31 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapePetYardAsync(name),
-				"GetPetYardAsync+", 
+				"GetPetYardAsync+",
 				name
 			);
 
-			return resp is PetYardData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
-		}
+			if (resp is PetYardData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
 
-		/// <summary>
-		/// Gets the player's graveyard information.
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <param name="amt">The number of entries to fetch.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("graveyard/{name}/{amt:int?}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> ScrapeGraveyardAsync(string name, int amt = 70)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardAsync(name, amt), "ScrapeGraveyardAsync", name);
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
+		}
 
 		/// <summary>
 		/// Gets the player's graveyard information. This reads from the query string instead of a direct parameter.
@@ -132,7 +125,9 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var amt = HttpContext.Request.Query.TryGetValue("amt", out var unparsedNum)
@@ -143,25 +138,24 @@ namespace RealmAspNet.Controllers
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeGraveyardAsync(name, amt),
-				"ScrapeGraveyardAsync+", 
+				"ScrapeGraveyardAsync+",
 				name
 			);
 
-			return resp is GraveyardData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
-		}
+			if (resp is GraveyardData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
 
-		/// <summary>
-		/// Gets the player's graveyard summary information.
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("graveyardsummary/{name}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> GetGraveyardSummaryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGraveyardSummaryAsync(name),
-				"GetGraveyardSummaryAsync", name);
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
+		}
 
 		/// <summary>
 		/// Gets the player's graveyard summary information. This reads from the query string instead of a direct
@@ -175,29 +169,31 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeGraveyardSummaryAsync(name),
-				"GetGraveyardSummaryAsync+", 
+				"GetGraveyardSummaryAsync+",
 				name
 			);
 
-			return resp is GraveyardSummaryData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
-		}
+			if (resp is GraveyardSummaryData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
 
-		/// <summary>
-		/// Gets the player's name history information.
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("namehistory/{name}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> GetNameHistoryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeNameHistoryAsync(name), "GetNameHistoryAsync", name);
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
+		}
 
 		/// <summary>
 		/// Gets the player's name history information. This reads from the query string instead of a direct parameter.
@@ -210,29 +206,31 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeNameHistoryAsync(name),
-				"GetNameHistoryAsync+", 
+				"GetNameHistoryAsync+",
 				name
 			);
 
-			return resp is NameHistoryData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
-		}
+			if (resp is NameHistoryData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
 
-		/// <summary>
-		/// Gets the player's rank history information.
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("rankhistory/{name}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> GetRankHistoryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeRankHistoryAsync(name), "GetRankHistoryAsync", name);
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
+		}
 
 		/// <summary>
 		/// Gets the player's rank history information. This reads from the query string instead of a direct parameter.
@@ -245,29 +243,31 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeRankHistoryAsync(name),
-				"GetRankHistoryAsync+", 
+				"GetRankHistoryAsync+",
 				name
 			);
 
-			return resp is RankHistoryData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
-		}
+			if (resp is RankHistoryData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
 
-		/// <summary>
-		/// Gets the player's guild history information.
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("guildhistory/{name}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> GetGuildHistoryAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeGuildHistoryAsync(name), "GetGuildHistoryAsync", name);
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
+		}
 
 		/// <summary>
 		/// Gets the player's guild history information. This reads from the query string instead of a direct parameter.
@@ -280,30 +280,31 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeGuildHistoryAsync(name),
-				"GetGuildHistoryAsync+", 
+				"GetGuildHistoryAsync+",
 				name
 			);
 
-			return resp is GuildHistoryData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
+			if (resp is GuildHistoryData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
+
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
 		}
-
-
-		/// <summary>
-		/// Gets the player's exaltation information.
-		/// </summary>
-		/// <param name="name">The name.</param>
-		/// <returns>The API response.</returns>
-		[HttpGet("exaltations/{name}")]
-		[Obsolete("Use the query string method.")]
-		public async Task<RealmEyeResponse> GetExaltationsAsync(string name)
-			=> await GetRealmSharperResponse(PlayerScraper.ScrapeExaltationsAsync(name), "GetExaltationsAsync", name);
 
 		/// <summary>
 		/// Gets the player's guild history information. This reads from the query string instead of a direct parameter.
@@ -316,18 +317,30 @@ namespace RealmAspNet.Controllers
 			if (string.IsNullOrEmpty(name))
 				return BadRequest(ProcessJsonSerialization(
 					HttpContext.Request.Query,
-					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound)
+					RealmEyePlayerResponse.GenerateGenericResponse(ResultCode.NotFound),
+					_prettifySerializationOption,
+					_defaultSerializationOption
 				));
 
 			var resp = await GetRealmSharperResponse(
 				PlayerScraper.ScrapeExaltationsAsync(name),
-				"GetExaltationsAsync+", 
+				"GetExaltationsAsync+",
 				name
 			);
 
-			return resp is ExaltationData r
-				? Ok(ProcessJsonSerialization(HttpContext.Request.Query, r))
-				: GetActionResult(resp, ProcessJsonSerialization(HttpContext.Request.Query, resp));
+			if (resp is ExaltationData r)
+			{
+				return Ok(ProcessJsonSerialization(HttpContext.Request.Query, r,
+					_prettifySerializationOption,
+					_defaultSerializationOption));
+			}
+
+			return GetActionResult(resp, ProcessJsonSerialization(
+				HttpContext.Request.Query,
+				resp,
+				_prettifySerializationOption,
+				_defaultSerializationOption
+			), this);
 		}
 
 		/// <summary>
@@ -367,45 +380,5 @@ namespace RealmAspNet.Controllers
 				return RealmEyePlayerResponse.GenerateGenericResponse(name);
 			}
 		}
-
-		/// <summary>
-		/// Gets the name from the query collection.
-		/// </summary>
-		/// <param name="collection">The query collection.</param>
-		/// <returns>The name, if any. An empty string otherwise.</returns>
-		private static string GetNameFromQuery(IQueryCollection collection)
-			=> collection.TryGetValue("name", out var name) ? name : string.Empty;
-
-		/// <summary>
-		/// Serializes the object into a string. In particular, this will check to see if we need to prettify the
-		/// output string.
-		/// </summary>
-		/// <param name="queryCollection">The query collection.</param>
-		/// <param name="resp">The response object.</param>
-		/// <returns>The resultant string.</returns>
-		private string ProcessJsonSerialization<T>(IQueryCollection queryCollection, T resp)
-			where T : notnull, RealmEyePlayerResponse
-		{
-			var res = queryCollection.ContainsKey("prettify")
-				? JsonSerializer.Serialize(resp, _prettifySerializationOption)
-				: JsonSerializer.Serialize(resp, _defaultSerializationOption);
-			// This is needed since the serializer will encode some characters.
-			return Regex.Unescape(res);
-		}
-
-		/// <summary>
-		/// Gets the appropriate return response from a failed RealmEye response.
-		/// </summary>
-		/// <param name="response">The original response.</param>
-		/// <param name="returnVal">The value to return.</param>
-		/// <returns>The appropriate IActionResult.</returns>
-		private IActionResult GetActionResult(RealmEyeResponse response, string returnVal)
-			=> response.ResultCode switch
-			{
-				ResultCode.NotFound => NotFound(returnVal),
-				ResultCode.ServiceUnavailable => StatusCode(503, returnVal),
-				ResultCode.InternalServerError => StatusCode(500, returnVal),
-				_ => Ok(returnVal)
-			};
 	}
 }

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -27,7 +28,7 @@ namespace RealmAspNet
 			services.AddMvc()
 				.AddJsonOptions(o =>
 				{
-					o.JsonSerializerOptions.IgnoreNullValues = true;
+					o.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 				});
 			services.AddLogging(opt =>
 			{

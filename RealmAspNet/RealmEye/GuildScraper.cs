@@ -59,9 +59,6 @@ namespace RealmAspNet.RealmEye
 					case "Fame":
 						returnData.Fame = long.Parse(col.NextSibling.InnerText.Split('(')[0]);
 						break;
-					case "Exp":
-						returnData.Exp = long.Parse(col.NextSibling.InnerText.Split('(')[0]);
-						break;
 					case "Most active on":
 						returnData.MostActiveOn = col.NextSibling.InnerText.Split('(')[0].Trim();
 						break;
@@ -125,58 +122,43 @@ namespace RealmAspNet.RealmEye
 					out var p)
 					? p
 					: -1;
-
-				// EXP: column 4
-				// Again guaranteed to be here
-				var exp = int.TryParse(memberRow.SelectSingleNode($"td[{4 + offset}]").InnerText,
-					out var q)
-					? q
-					: -1;
-
-				// Rank/Stars: column 5
+				
+				// Rank/Stars: column 4
 				// Also guaranteed to be here
-				var stars = int.TryParse(memberRow.SelectSingleNode($"td[{5 + offset}]").InnerText,
+				var stars = int.TryParse(memberRow.SelectSingleNode($"td[{4 + offset}]").InnerText,
 					out var r)
 					? r
 					: -1;
 
-				// Number of characters: column 6
-				var charCt = int.TryParse(memberRow.SelectSingleNode($"td[{6 + offset}]").InnerText,
+				// Number of characters: column 5
+				var charCt = int.TryParse(memberRow.SelectSingleNode($"td[{5 + offset}]").InnerText,
 					out var c)
 					? c
 					: -1;
 
-				// Last seen: column 7
-				var lastSeenTimeNodes = memberRow.SelectSingleNode($"td[{7 + offset}]").ChildNodes;
+				// Last seen: column 6
+				var lastSeenTimeNodes = memberRow.SelectSingleNode($"td[{6 + offset}]").ChildNodes;
 				var lastSeenTime = lastSeenTimeNodes.Count == 0
 					? string.Empty
 					: lastSeenTimeNodes[0].InnerText;
 
-				// Last seen server: column 8
-				var lastSeenServer = memberRow.SelectSingleNode($"td[{8 + offset}]").InnerText;
+				// Last seen server: column 7
+				var lastSeenServer = memberRow.SelectSingleNode($"td[{7 + offset}]").InnerText;
 
-				// Avg. fame/char: column 9
-				var avgFameChar = long.TryParse(memberRow.SelectSingleNode($"td[{9 + offset}]").InnerText,
+				// Avg. fame/char: column 8
+				var avgFameChar = long.TryParse(memberRow.SelectSingleNode($"td[{8 + offset}]").InnerText,
 					out var a)
 					? a
 					: -1;
-
-				// Avg. fame/char: column 10
-				var avgExpChar = long.TryParse(memberRow.SelectSingleNode($"td[{10 + offset}]").InnerText,
-					out var e)
-					? e
-					: -1;
-
+				
 				members.Add(new GuildMember
 				{
 					Name = name,
 					GuildRank = guildRank,
 					Fame = fame,
-					Exp = exp,
 					Rank = stars,
 					LastSeenServer = lastSeenServer,
 					LastSeenTime = lastSeenTime,
-					AverageExpPerCharacter = avgExpChar,
 					AverageFamePerCharacter = avgFameChar,
 					Characters = charCt
 				});

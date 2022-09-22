@@ -80,9 +80,6 @@ namespace RealmAspNet.RealmEye
 					case "Fame":
 						returnData.Fame = long.Parse(col.NextSibling.InnerText.Split('(')[0]);
 						break;
-					case "Exp":
-						returnData.Exp = long.Parse(col.NextSibling.InnerText.Split('(')[0]);
-						break;
 					case "Rank":
 						returnData.Rank = int.Parse(col.NextSibling.InnerText);
 						break;
@@ -174,36 +171,22 @@ namespace RealmAspNet.RealmEye
 					out var lvl)
 					? lvl
 					: -1;
-
-				// class quests completed
-				var cqcNode = characterRow.SelectSingleNode($"td[{5 - tableOffset}]");
-				var cqc = cqcNode.InnerText != null && cqcNode.InnerText.Contains('/')
-					? int.TryParse(cqcNode.InnerText.Split('/')[0], out var c)
-						? c
-						: -1
-					: -1;
-
+				
 				// alive fame
-				var fame = long.TryParse(characterRow.SelectSingleNode($"td[{6 - tableOffset}]").InnerText,
+				var fame = long.TryParse(characterRow.SelectSingleNode($"td[{5 - tableOffset}]").InnerText,
 					out var f)
 					? f
 					: -1;
 
-				// alive exp
-				var exp = long.TryParse(characterRow.SelectSingleNode($"td[{7 - tableOffset}]").InnerText,
-					out var e)
-					? e
-					: -1;
-
 				// rank
-				var place = int.TryParse(characterRow.SelectSingleNode($"td[{8 - tableOffset}]").InnerText,
+				var place = int.TryParse(characterRow.SelectSingleNode($"td[{6 - tableOffset}]").InnerText,
 					out var p)
 					? p
 					: -1;
 
 				// equipment
 				var equips = characterRow
-					.SelectSingleNode($"td[{9 - tableOffset}]")
+					.SelectSingleNode($"td[{7 - tableOffset}]")
 					// <span class="item-wrapper">...
 					.ChildNodes;
 				var characterEquipment = GetEquipment(equips);
@@ -211,7 +194,7 @@ namespace RealmAspNet.RealmEye
 				// player stats 
 				// <span class = "player-stats" ...
 				var stats = characterRow
-					.SelectSingleNode($"td[{10 - tableOffset}]");
+					.SelectSingleNode($"td[{8 - tableOffset}]");
 
 				var maxedStats = stats.InnerText != null && stats.InnerText.Contains('/')
 					? int.TryParse(stats.InnerText.Split('/')[0], out var ms)
@@ -264,9 +247,7 @@ namespace RealmAspNet.RealmEye
 					},
 					CharacterSkin = characterDisplayInfo,
 					CharacterType = characterType,
-					ClassQuestsCompleted = cqc,
 					EquipmentData = characterEquipment.ToArray(),
-					Experience = exp,
 					Fame = fame,
 					HasBackpack = equips.Count == 5,
 					Level = level,

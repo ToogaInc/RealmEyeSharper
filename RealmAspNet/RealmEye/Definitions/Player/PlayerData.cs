@@ -7,7 +7,6 @@ namespace RealmAspNet.RealmEye.Definitions.Player
 		public int CharacterCount { get; set; }
 		public int Skins { get; set; }
 		public long Fame { get; set; }
-		public long Exp { get; set; }
 		public int Rank { get; set; }
 		public int AccountFame { get; set; }
 		public string Guild { get; set; }
@@ -25,9 +24,7 @@ namespace RealmAspNet.RealmEye.Definitions.Player
 		public CharacterSkinInfo CharacterSkin { get; init; }
 		public string CharacterType { get; init; }
 		public int Level { get; init; }
-		public int ClassQuestsCompleted { get; init; }
 		public long Fame { get; init; }
-		public long Experience { get; init; }
 		public int Place { get; init; }
 		public GearInfo[] EquipmentData { get; init; }
 		public bool HasBackpack { get; init; }

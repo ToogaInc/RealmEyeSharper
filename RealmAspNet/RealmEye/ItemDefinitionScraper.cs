@@ -24,7 +24,7 @@ namespace RealmAspNet.RealmEye
 		{
 			using var httpMessage = new HttpRequestMessage
 			{
-				RequestUri = new Uri("https://www.realmeye.com/s/y3/js/definition.js"),
+				RequestUri = new Uri("https://www.realmeye.com/s/gb/js/definition.js"),
 				Method = HttpMethod.Get
 			};
 

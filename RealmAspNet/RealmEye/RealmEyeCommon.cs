@@ -1,6 +1,7 @@
 ﻿#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -192,15 +193,33 @@ namespace RealmAspNet.RealmEye
 				}
 
 				var itemName = WebUtility.HtmlDecode(itemContainer.ChildNodes[0].Attributes["title"].Value);
-				var splitName = itemName.Split(" ");
-				var parsedName = string.Join(" ", splitName[..^1]);
+				// split itemName by newline to get all enchantments.
+				// The first element will always be the name of the item.
+				// The remaining element(s) will be any enchantments.
+				var splitName = itemName.Split('\n');
+				
+				// Process the full name of the item, of the form:
+				//		Name of Item TIER
+				// We want to eliminate the TIER from parsedName.
+				var rawItemName = splitName[0].Split(' ');
+				var parsedName = string.Join(" ", rawItemName[..^1]);
+				
+				// Process any enchantments. As of the commit day, items can only support
+				// one enchantment. But, it's possible that multiple will be supported
+				// later. Enchantments are in the form:
+				//		Enchantment Name: Enchantment Description
+				var enchantments = splitName[1..]
+					.Select(x => x.Split(':').Select(y => y.Trim()).ToArray())
+					.ToList();
+				
 				gearInfo.Add(new GearInfo
 				{
-					Tier = splitName[^1],
+					Tier = rawItemName[^1],
 					Name = parsedName,
 					Id = NameToItem.TryGetValue(parsedName, out var val)
 						? val.Id
-						: -1
+						: -1,
+					Enchantments = enchantments,
 				});
 			}
 

@@ -37,6 +37,15 @@ namespace RealmAspNet.RealmEye.Definitions.Player
 		public string Name { get; init; }
 		public string Tier { get; init; }
 		public int Id { get; init; }
+		
+		/// <summary>
+		/// All enchantment(s) for this item. Although the game only supports 1 enchantment
+		/// per item, it's possible that more enchantments will be added later.
+		///
+		/// For each element X in this list, X[0] will represent the name of the enchantment, and
+		/// X[1] will represent the enchantment's description.
+		/// </summary>
+		public IList<string[]> Enchantments { get; init; }
 	}
 
 	public struct PetInfo
